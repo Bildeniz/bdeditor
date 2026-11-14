@@ -17,6 +17,8 @@ public-facing overview is `README.md`.
 - `bd_editor/locale/` stores editor JSON labels and Django message catalogs.
 - `frontend/src/editor.js` is the Tiptap-based browser editor source. Build its
   local static bundle before packaging.
+- Keep document typography and color styles scoped to the editor content
+  surface, separate from Django admin styles.
 - `bd_editor/static/bd_editor/THIRD_PARTY_NOTICES.txt` includes bundled
   frontend component licenses.
 - The public two-app demo lives under `demo/`; its localized article index,

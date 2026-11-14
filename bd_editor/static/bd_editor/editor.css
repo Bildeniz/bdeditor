@@ -9,6 +9,10 @@
   --bd-editor-accent: #356d8d;
   --bd-editor-danger: #a4262c;
   position: relative;
+  display: block;
+  box-sizing: border-box;
+  width: 100%;
+  max-width: none;
   overflow: visible;
   border: 1px solid var(--bd-editor-border);
   border-radius: 0.25rem;
@@ -199,6 +203,9 @@
 }
 
 .bd-editor-canvas {
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 0;
   min-height: 15rem;
   padding: 0.8rem 1rem;
   background: var(--bd-editor-surface);
@@ -206,11 +213,100 @@
 
 .bd-editor-canvas .ProseMirror {
   min-height: 13rem;
+  color: #27343c;
+  font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+  font-size: 1rem;
+  font-weight: 400;
+  line-height: 1.65;
+  text-align: start;
   outline: none;
 }
 
 .bd-editor-canvas .ProseMirror:focus-visible {
   outline: none;
+}
+
+.bd-editor-canvas .ProseMirror :is(h1, h2, h3, h4, h5, h6) {
+  margin: 1.2em 0 0.45em;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  color: #202a31;
+  font-family: inherit;
+  font-weight: 650;
+  line-height: 1.25;
+  text-align: start;
+  text-transform: none;
+  letter-spacing: -0.025em;
+}
+
+.bd-editor-canvas .ProseMirror h1 {
+  font-size: 2rem;
+}
+
+.bd-editor-canvas .ProseMirror h2 {
+  font-size: 1.65rem;
+}
+
+.bd-editor-canvas .ProseMirror h3 {
+  font-size: 1.35rem;
+}
+
+.bd-editor-canvas .ProseMirror h4 {
+  font-size: 1.15rem;
+}
+
+.bd-editor-canvas .ProseMirror h5,
+.bd-editor-canvas .ProseMirror h6 {
+  font-size: 1rem;
+}
+
+.bd-editor-canvas .ProseMirror p {
+  margin: 0 0 0.9em;
+  padding: 0;
+  color: inherit;
+  font-family: inherit;
+  font-size: inherit;
+  font-weight: 400;
+  line-height: inherit;
+}
+
+.bd-editor-canvas .ProseMirror ul,
+.bd-editor-canvas .ProseMirror ol {
+  margin: 0.7em 0 1em;
+  padding-left: 1.6em;
+}
+
+.bd-editor-canvas .ProseMirror li {
+  margin: 0.2em 0;
+  padding: 0;
+  line-height: inherit;
+}
+
+.bd-editor-canvas .ProseMirror blockquote {
+  margin: 1em 0;
+  padding: 0.65rem 1rem;
+  border: 0;
+  border-left: 3px solid #c8d4da;
+  background: #f5f7f8;
+  color: #46545d;
+}
+
+.bd-editor-canvas .ProseMirror a {
+  color: #245c79;
+  text-decoration: underline;
+  text-underline-offset: 0.15em;
+}
+
+.bd-editor-canvas .ProseMirror code {
+  padding: 0.08em 0.25em;
+  border-radius: 0.15rem;
+  background: #eff2f4;
+  color: #263c48;
+  font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+  font-size: 0.9em;
 }
 
 .bd-editor-canvas .ProseMirror > :first-child {
@@ -288,6 +384,8 @@
 }
 
 .bd-editor-source-wrapper {
+  box-sizing: border-box;
+  width: 100%;
   padding: 0.75rem;
   background: var(--bd-editor-surface);
 }
@@ -301,6 +399,7 @@
 .bd-editor-source-view {
   box-sizing: border-box;
   width: 100%;
+  max-width: none;
   min-height: 15rem;
   padding: 0.65rem;
   border: 1px solid var(--bd-editor-border);
@@ -312,6 +411,66 @@
   line-height: 1.5;
   resize: vertical;
   tab-size: 2;
+}
+
+.bd-editor-color-menu {
+  position: absolute;
+  z-index: 25;
+  display: grid;
+  width: 14rem;
+  gap: 0.65rem;
+  padding: 0.7rem;
+  border: 1px solid var(--bd-editor-border);
+  border-radius: 0.25rem;
+  background: var(--bd-editor-surface);
+  box-shadow: 0 0.35rem 1rem rgb(24 38 46 / 18%);
+}
+
+.bd-editor-color-menu[hidden] {
+  display: none !important;
+}
+
+.bd-editor-color-swatches {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 0.4rem;
+}
+
+.bd-editor-color-swatch {
+  width: 1.8rem;
+  height: 1.8rem;
+  padding: 0;
+  border: 1px solid #7d898f;
+  border-radius: 0.2rem;
+  background: var(--bd-editor-swatch);
+  cursor: pointer;
+}
+
+.bd-editor-color-swatch:hover,
+.bd-editor-color-swatch:focus-visible,
+.bd-editor-color-swatch[aria-pressed="true"] {
+  outline: 2px solid var(--bd-editor-accent);
+  outline-offset: 2px;
+}
+
+.bd-editor-color-reset {
+  min-height: 2rem;
+  padding: 0.35rem 0.5rem;
+  border: 1px solid var(--bd-editor-border);
+  border-radius: 0.2rem;
+  background: var(--bd-editor-surface);
+  color: var(--bd-editor-text);
+  cursor: pointer;
+  font: inherit;
+  font-size: 0.82rem;
+  text-align: left;
+}
+
+.bd-editor-color-reset:hover,
+.bd-editor-color-reset:focus-visible,
+.bd-editor-color-reset[aria-pressed="true"] {
+  border-color: var(--bd-editor-accent);
+  background: var(--bd-editor-hover);
 }
 
 .bd-editor-status {

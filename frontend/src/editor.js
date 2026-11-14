@@ -2,6 +2,8 @@ import { Editor, Node, getMarkRange } from "@tiptap/core";
 import Image from "@tiptap/extension-image";
 import { TableKit } from "@tiptap/extension-table";
 import StarterKit from "@tiptap/starter-kit";
+import Color from "@tiptap/extension-color";
+import { BackgroundColor, TextStyle } from "@tiptap/extension-text-style";
 import BoldIcon from "@tabler/icons/outline/bold.svg";
 import ItalicIcon from "@tabler/icons/outline/italic.svg";
 import UnderlineIcon from "@tabler/icons/outline/underline.svg";
@@ -10,6 +12,8 @@ import BulletListIcon from "@tabler/icons/outline/list.svg";
 import NumberedListIcon from "@tabler/icons/outline/list-numbers.svg";
 import QuoteIcon from "@tabler/icons/outline/quote.svg";
 import CodeIcon from "@tabler/icons/outline/code.svg";
+import TextColorIcon from "@tabler/icons/outline/color-swatch.svg";
+import BackgroundColorIcon from "@tabler/icons/outline/highlight.svg";
 import LinkIcon from "@tabler/icons/outline/link.svg";
 import ImageIcon from "@tabler/icons/outline/photo.svg";
 import EmbedIcon from "@tabler/icons/outline/player-play.svg";
@@ -33,6 +37,24 @@ const YOUTUBE_ID = /^[A-Za-z0-9_-]{11}$/;
 const VIMEO_ID = /^\d{1,12}$/;
 const formsWithSubmitHandler = new WeakSet();
 let editorInstanceCount = 0;
+
+const TEXT_COLOR_PALETTE = [
+  { key: "colorCharcoal", value: "#1f2937" },
+  { key: "colorBlue", value: "#1d4ed8" },
+  { key: "colorRed", value: "#b91c1c" },
+  { key: "colorGreen", value: "#15803d" },
+  { key: "colorPurple", value: "#7e22ce" },
+  { key: "colorOrange", value: "#b45309" },
+];
+
+const BACKGROUND_COLOR_PALETTE = [
+  { key: "backgroundYellow", value: "#fef08a" },
+  { key: "backgroundBlue", value: "#bfdbfe" },
+  { key: "backgroundGreen", value: "#bbf7d0" },
+  { key: "backgroundRose", value: "#fecdd3" },
+  { key: "backgroundPurple", value: "#ddd6fe" },
+  { key: "backgroundGray", value: "#e2e8f0" },
+];
 
 function canonicalEmbedUrl(rawUrl, providers) {
   if (typeof rawUrl !== "string" || rawUrl.length > 2048) return null;
@@ -358,6 +380,7 @@ function initializeEditor(source) {
   let draftTimer = null;
   const buttonRefs = new Map();
   const tableActions = new Map();
+  const colorMenus = new Map();
 
   toolbar.setAttribute("aria-label", messages.toolbar);
   rows.table.setAttribute("aria-label", messages.tableTools);
@@ -470,6 +493,9 @@ function initializeEditor(source) {
           isAllowedUri: isSafeLink,
         },
       }),
+      TextStyle,
+      Color,
+      BackgroundColor,
       SafeImage.configure({ allowBase64: false }),
       TableKit.configure({ table: { resizable: true } }),
       createVideoEmbedExtension(config.embeds?.providers || []),
@@ -496,6 +522,7 @@ function initializeEditor(source) {
   }
 
   function setEditorMode(nextSourceMode, { preserveSource = false } = {}) {
+    closeColorMenus();
     if (nextSourceMode) {
       sourceMode = true;
       sourceWrapper.hidden = false;
@@ -551,6 +578,19 @@ function initializeEditor(source) {
       if (name === "undo") button.disabled = sourceMode || !editor.can().undo();
       if (name === "redo") button.disabled = sourceMode || !editor.can().redo();
       if (name !== "undo" && name !== "redo") button.disabled = sourceMode;
+    }
+
+    const textStyle = editor.getAttributes("textStyle");
+    const currentColors = {
+      text_color: textStyle.color || "",
+      background_color: textStyle.backgroundColor || "",
+    };
+    for (const [name, menuState] of colorMenus) {
+      const currentColor = currentColors[name];
+      menuState.button.setAttribute("aria-pressed", String(Boolean(currentColor)));
+      for (const option of menuState.menu.querySelectorAll("[data-bd-color-value]")) {
+        option.setAttribute("aria-pressed", String(option.dataset.bdColorValue === currentColor));
+      }
     }
 
     const headingSelect = buttonRefs.get("heading");
@@ -982,9 +1022,103 @@ function initializeEditor(source) {
     .querySelector("[data-bd-table-close]")
     .addEventListener("click", () => closeDialog(tableDialog));
 
+  function closeColorMenus({ returnFocus = false } = {}) {
+    for (const { button, menu } of colorMenus.values()) {
+      if (menu.hidden) continue;
+      menu.hidden = true;
+      button.setAttribute("aria-expanded", "false");
+      if (returnFocus) button.focus();
+    }
+  }
+
+  function positionColorMenu(button, menu) {
+    const shellRect = root.getBoundingClientRect();
+    const buttonRect = button.getBoundingClientRect();
+    const menuWidth = 224;
+    menu.style.left = `${Math.max(
+      8,
+      Math.min(buttonRect.left - shellRect.left, root.clientWidth - menuWidth - 8),
+    )}px`;
+    menu.style.top = `${buttonRect.bottom - shellRect.top + 5}px`;
+  }
+
+  function addColorPicker(name, icon, palette, rowName) {
+    const button = addButton(
+      name,
+      icon,
+      () => {
+        const state = colorMenus.get(name);
+        const shouldOpen = state.menu.hidden;
+        closeColorMenus();
+        if (shouldOpen && !sourceMode) {
+          state.menu.hidden = false;
+          state.button.setAttribute("aria-expanded", "true");
+          positionColorMenu(state.button, state.menu);
+        }
+      },
+      rowName,
+    );
+    if (!button) return;
+
+    button.classList.add("bd-editor-color-trigger");
+    button.setAttribute("aria-haspopup", "true");
+    button.setAttribute("aria-expanded", "false");
+
+    const menu = document.createElement("div");
+    menu.className = "bd-editor-color-menu";
+    menu.hidden = true;
+    menu.setAttribute("role", "group");
+    menu.setAttribute("aria-label", messages[name]);
+
+    const swatches = document.createElement("div");
+    swatches.className = "bd-editor-color-swatches";
+    for (const color of palette) {
+      const option = document.createElement("button");
+      option.type = "button";
+      option.className = "bd-editor-color-swatch";
+      option.style.setProperty("--bd-editor-swatch", color.value);
+      option.title = messages[color.key];
+      option.setAttribute("aria-label", messages[color.key]);
+      option.setAttribute("aria-pressed", "false");
+      option.dataset.bdColorValue = color.value;
+      option.addEventListener("click", () => {
+        const chain = editor.chain().focus();
+        if (name === "text_color") chain.setColor(color.value).run();
+        else chain.setBackgroundColor(color.value).run();
+        closeColorMenus();
+      });
+      swatches.append(option);
+    }
+    menu.append(swatches);
+
+    const reset = document.createElement("button");
+    reset.type = "button";
+    reset.className = "bd-editor-color-reset";
+    reset.textContent = messages.defaultColor;
+    reset.dataset.bdColorValue = "";
+    reset.setAttribute("aria-pressed", "false");
+    reset.addEventListener("click", () => {
+      const chain = editor.chain().focus();
+      if (name === "text_color") chain.unsetColor().run();
+      else chain.unsetBackgroundColor().run();
+      closeColorMenus();
+    });
+    menu.append(reset);
+    root.append(menu);
+    colorMenus.set(name, { button, menu });
+  }
+
   root.addEventListener(
     "keydown",
     (event) => {
+      if (event.key === "Escape" && colorMenus.size) {
+        const openMenu = [...colorMenus.values()].find(({ menu }) => !menu.hidden);
+        if (openMenu) {
+          event.preventDefault();
+          closeColorMenus({ returnFocus: true });
+          return;
+        }
+      }
       if (event.key !== "Enter" || event.isComposing) return;
 
       const target = event.target;
@@ -1007,6 +1141,13 @@ function initializeEditor(source) {
     },
     true,
   );
+
+  root.addEventListener("click", (event) => {
+    const target = event.target;
+    if (!(target instanceof Element)) return;
+    if (target.closest(".bd-editor-color-menu, .bd-editor-color-trigger")) return;
+    closeColorMenus();
+  });
 
   addButton("undo", UndoIcon, () => editor.chain().focus().undo().run(), "primary");
   addButton("redo", RedoIcon, () => editor.chain().focus().redo().run(), "primary");
@@ -1048,6 +1189,14 @@ function initializeEditor(source) {
 
   addButton("bold", BoldIcon, () => editor.chain().focus().toggleBold().run(), "format");
   addButton("italic", ItalicIcon, () => editor.chain().focus().toggleItalic().run(), "format");
+  addColorPicker("text_color", TextColorIcon, TEXT_COLOR_PALETTE, "format");
+  addColorPicker(
+    "background_color",
+    BackgroundColorIcon,
+    BACKGROUND_COLOR_PALETTE,
+    "format",
+  );
+  addSeparator("format");
   addButton(
     "underline",
     UnderlineIcon,

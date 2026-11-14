@@ -123,6 +123,8 @@ _SMALL_TOOLBAR = {
     "heading": True,
     "bold": True,
     "italic": True,
+    "text_color": False,
+    "background_color": False,
     "underline": False,
     "strike": False,
     "bullet_list": True,
@@ -140,6 +142,8 @@ _SMALL_TOOLBAR = {
 
 _STANDARD_TOOLBAR = {
     **_SMALL_TOOLBAR,
+    "text_color": True,
+    "background_color": True,
     "strike": True,
     "blockquote": True,
     "code_block": True,
@@ -302,6 +306,22 @@ def _validate_config(config, path):
             f"{path}.sanitizer.css_properties",
             f"unsupported or unsafe CSS properties: {', '.join(invalid)}.",
         )
+    allowed_css = set(sanitizer["css_properties"])
+    span_attributes = set(attributes.get("span", []))
+    for toolbar_option, css_property in (
+        ("text_color", "color"),
+        ("background_color", "background-color"),
+    ):
+        if toolbar[toolbar_option] and (
+            css_property not in allowed_css
+            or "span" not in tags
+            or "style" not in span_attributes
+        ):
+            _fail(
+                f"{path}.toolbar.{toolbar_option}",
+                f"requires the span style attribute and sanitizer.css_properties "
+                f"to allow {css_property!r}.",
+            )
 
     _require_list(sanitizer["url_schemes"], f"{path}.sanitizer.url_schemes")
     if not set(sanitizer["url_schemes"]).issubset(SAFE_URL_SCHEMES):

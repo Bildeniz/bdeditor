@@ -21,6 +21,8 @@ app. The upload view is mounted under `/bd-editor/` and is limited to active
 Django staff users. The demo uses SQLite and local media storage and is for
 development only. It is not a production deployment template.
 
+The full toolbar profile also offers a small text-color and highlight palette.
+
 With `DJANGO_DEBUG=1` (the default), the demo generates a stable,
 development-only key in the ignored `demo/.secret_key` file so authenticated
 sessions survive `runserver` auto-reloads. For production, set a private

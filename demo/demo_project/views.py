@@ -50,8 +50,9 @@ def _configuration_sections():
             "title": _("Shared editor defaults"),
             "description": _(
                 "The full toolbar profile is the starting point for both apps. "
-                "Image uploads use Django storage, accept JPEG, PNG, and WebP, "
-                "and allow editors to choose output format and quality."
+                "Text and background color palettes are available. Image uploads "
+                "use Django storage, accept JPEG, PNG, and WebP, and allow editors "
+                "to choose output format and quality."
             ),
             "path": "demo_project/settings.py",
             "code": global_code,

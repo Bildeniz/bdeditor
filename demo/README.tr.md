@@ -26,6 +26,8 @@ yazı oluşturabilirsiniz. Görsel yükleme ucu `/bd-editor/` altında bulunur v
 aktif Django personeliyle sınırlandırılmıştır. SQLite ve yerel medya depolaması
 kullanan bu demo yalnızca geliştirme içindir; üretim dağıtım şablonu değildir.
 
+Full araç çubuğu profili ayrıca metin rengi ve vurgulama için küçük bir palet sunar.
+
 Varsayılan `DJANGO_DEBUG=1` ayarında demo, `runserver` kod değişikliklerinden
 sonra yeniden başladığında oturumların geçerliliğini korumak için
 yoksayılan `demo/.secret_key` dosyasında sabit, geliştirmeye özel bir anahtar

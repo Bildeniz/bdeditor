@@ -72,8 +72,8 @@ msgstr "Bu kod örnekleri çalışan demonun ayarlarından alınmıştır."
 msgid "Shared editor defaults"
 msgstr "Paylaşılan editör varsayılanları"
 
-msgid "The full toolbar profile is the starting point for both apps. Image uploads use Django storage, accept JPEG, PNG, and WebP, and allow editors to choose output format and quality."
-msgstr "Her iki uygulama da full araç çubuğu profiliyle başlar. Görseller Django Storage ile saklanır; JPEG, PNG ve WebP biçimleri desteklenir, çıktı biçimi ve kalitesi seçilebilir."
+msgid "The full toolbar profile is the starting point for both apps. Text and background color palettes are available. Image uploads use Django storage, accept JPEG, PNG, and WebP, and allow editors to choose output format and quality."
+msgstr "Her iki uygulama da full araç çubuğu profiliyle başlar. Metin ve arka plan rengi paletleri kullanılabilir. Görseller Django Storage ile saklanır; JPEG, PNG ve WebP biçimleri desteklenir, çıktı biçimi ve kalitesi seçilebilir."
 
 msgid "Blog A keeps the heading selector and turns underline off. All other buttons inherit the shared profile."
 msgstr "Blog A başlık seçicisini kullanır ve altı çizili biçimlendirmeyi kapatır. Diğer düğmeler paylaşılan profilden alınır."

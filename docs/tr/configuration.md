@@ -36,8 +36,8 @@ BD_EDITOR = {
 ```
 
 - `small`: başlıklar, temel biçimlendirme, listeler, bağlantılar ve geri al/yinele.
-- `standard` (varsayılan): alıntı, kod, tablolar, video gömme ve Metin/HTML
-  anahtarı ekler.
+- `standard` (varsayılan): metin/arka plan rengi paletlerini, alıntı, kod,
+  tablo, video gömme ve Metin/HTML anahtarını ekler.
 - `full`: `standard` profiline altı çizili biçimlendirme ve görsel yüklemeyi
   ekler. `images` eklentisi ve `uploads.enabled = True` gerekir.
 
@@ -52,6 +52,8 @@ uygulamanın başlangıç profilini seçer.
 | `heading` | `true` | Paragraf ve 1-6 başlık düzeyi seçimi |
 | `bold` | `true` | Kalın |
 | `italic` | `true` | İtalik |
+| `text_color` | `true` | Editör paletinden metin rengi seçimi |
+| `background_color` | `true` | Seçili metne arka plan rengi uygulama |
 | `underline` | `false` | Altı çizili |
 | `strike` | `true` | Üstü çizili |
 | `bullet_list` | `true` | Madde işaretli liste |
@@ -141,6 +143,10 @@ BD_EDITOR = {
     },
 }
 ```
+
+Renk araç çubuğu düğmeleri etkinse temizleyici izin listesinde `span` etiketi,
+bu etiketin `style` özelliği ve ilgili `color` veya `background-color` CSS
+özelliği bulunmalıdır. Çelişen ayarlarda yapılandırma doğrulaması hata verir.
 
 Bilinmeyen anahtarlar, güvensiz etiket/özellikler, geçersiz türler ve birbiriyle
 çelişen araç çubuğu/yükleme ayarları `ImproperlyConfigured` hatası üretir.

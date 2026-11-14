@@ -10,6 +10,7 @@
 - Milestone 6: complete.
 - Follow-up admin and demo UX changes: complete.
 - Demo autoreload session-key fix: complete.
+- Editor content-style isolation, full-width layout, and color palettes: complete.
 
 ## Completed milestones
 
@@ -27,7 +28,7 @@
 - Built and validated the universal wheel and source distribution; Twine
   metadata checks pass and the wheel contains the required static, template,
   and localization assets.
-- The 32-test suite passes on Python 3.14 with Django 6.1.3; the
+- The 35-test suite passes on Python 3.14 with Django 6.1.3; the
   earlier 20-test suite also passed on Django 5.2.19, 6.0.10, and
   6.1.3. CI is configured for the supported Python/Django combinations.
 - Added `small`, `standard`, and `full` toolbar presets with app-level
@@ -51,9 +52,13 @@
   templates, and static assets; Twine metadata checks and archive-content
   verification both pass.
 - Replaced the demo's per-process random development key with a stable
-  debug-only key and made an explicit environment key mandatory in production.
+  gitignored local key file and made an explicit environment key mandatory in
+  production.
 - Added settings regression tests for reload stability and production-key
   requirements.
+- Scoped neutral article typography to the editor surface, increased its
+  width to fill its form field, and added accessible foreground/highlight color
+  palettes backed by the server's CSS allowlist.
 
 ## Known boundaries
 

@@ -35,8 +35,8 @@ BD_EDITOR = {
 ```
 
 - `small`: headings, basic emphasis, lists, links, and undo/redo.
-- `standard` (default): small plus quotes, code, tables, video embeds, and the
-  Text/HTML mode switch.
+- `standard` (default): small plus text/background color palettes, quotes,
+  code, tables, video embeds, and the Text/HTML mode switch.
 - `full`: standard plus underline and image upload. It requires the `images`
   extra and `uploads.enabled = True`.
 
@@ -53,6 +53,8 @@ app's base toolbar, then that app's explicit flags are applied.
 | `heading` | `true` | Heading selector for paragraphs and heading levels 1-6 |
 | `bold` | `true` | Bold mark |
 | `italic` | `true` | Italic mark |
+| `text_color` | `true` | Choose a text color from the editor palette |
+| `background_color` | `true` | Highlight selected text with a background color |
 | `underline` | `false` | Underline mark |
 | `strike` | `true` | Strikethrough mark |
 | `bullet_list` | `true` | Bulleted list |
@@ -151,6 +153,11 @@ BD_EDITOR = {
     },
 }
 ```
+
+When a color toolbar button is enabled, keep the `span` tag, its `style`
+attribute, and the matching `color` or `background-color` property in the
+sanitizer allowlists. Configuration validation reports an error if those
+requirements conflict.
 
 Unknown keys, unsupported tags, unsafe attributes/properties, invalid types,
 and contradictory toolbar/upload settings raise `ImproperlyConfigured`.

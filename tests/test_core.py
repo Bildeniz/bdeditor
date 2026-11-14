@@ -17,7 +17,7 @@ from tests.models import Article
 
 def test_sanitizer_removes_executable_markup_and_unsafe_css():
     source = (
-        '<p onclick="alert(1)" style="color: red; position: fixed">'
+        '<p onclick="alert(1)" style="color: #1d4ed8; background-color: #bfdbfe; position: fixed">'
         "Safe<script>alert(2)</script>"
         '<a href="javascript:alert(3)">link</a>'
         '<img src="x" onerror="alert(4)"></p>'
@@ -30,8 +30,25 @@ def test_sanitizer_removes_executable_markup_and_unsafe_css():
     assert "onclick" not in cleaned
     assert "onerror" not in cleaned
     assert "javascript:" not in cleaned
-    assert "color:red" in cleaned
+    assert "color:#1d4ed8" in cleaned
+    assert "background-color:#bfdbfe" in cleaned
     assert "position" not in cleaned
+
+
+def test_inline_color_marks_are_kept_but_removed_by_style_free_helper():
+    source = (
+        '<p><span style="color: #1d4ed8; background-color: #fef08a">'
+        "Colored text</span></p>"
+    )
+
+    sanitized = sanitize_html(source)
+    style_free = only_html(source)
+
+    assert "color:#1d4ed8" in sanitized
+    assert "background-color:#fef08a" in sanitized
+    assert "Colored text" in style_free
+    assert "color:" not in style_free
+    assert "background-color:" not in style_free
 
 
 def test_video_iframe_is_canonicalized_only_for_an_enabled_provider():
@@ -55,6 +72,22 @@ def test_helpers_return_plain_text_and_style_free_html():
 
     assert only_html(source) == "<p>Hello <strong>world</strong></p><p>Next</p>"
     assert clean_text(source) == "Hello world\nNext"
+
+
+def test_text_and_background_colors_are_safe_and_style_free_helper_removes_them():
+    source = (
+        '<p><span style="color: #1d4ed8; background-color: #fef08a">'
+        "Colored text</span></p>"
+    )
+
+    sanitized = sanitize_html(source)
+    style_free = only_html(source)
+
+    assert "color:#1d4ed8" in sanitized
+    assert "background-color:#fef08a" in sanitized
+    assert "Colored text" in style_free
+    assert "color:" not in style_free
+    assert "background-color:" not in style_free
 
 
 def test_script_examples_inside_code_blocks_remain_inert_text():
@@ -113,6 +146,14 @@ def test_unknown_configuration_is_rejected():
 
 
 @override_settings(
+    BD_EDITOR={"defaults": {"sanitizer": {"css_properties": ["background-color"]}}}
+)
+def test_color_toolbar_requires_safe_span_color_styles():
+    with pytest.raises(ImproperlyConfigured, match="toolbar.text_color"):
+        get_config()
+
+
+@override_settings(
     BD_EDITOR={
         "defaults": {
             "toolbar_preset": "small",
@@ -132,9 +173,12 @@ def test_toolbar_presets_keep_partial_global_and_app_overrides():
 
     assert compact["toolbar_preset"] == "small"
     assert compact["toolbar"]["table"] is False
+    assert compact["toolbar"]["text_color"] is False
     assert compact["toolbar"]["underline"] is True
     assert app_config["toolbar_preset"] == "standard"
     assert app_config["toolbar"]["table"] is True
+    assert app_config["toolbar"]["text_color"] is True
+    assert app_config["toolbar"]["background_color"] is True
     assert app_config["toolbar"]["heading"] is False
     assert app_config["drafts"] == {"enabled": False, "ttl_days": 7}
 
@@ -177,7 +221,14 @@ def test_upload_byte_limit_has_a_hard_upper_bound():
 
 
 @override_settings(
-    BD_EDITOR={"apps": {"article_a": {"sanitizer": {"tags": ["p", "strong"]}}}}
+    BD_EDITOR={
+        "apps": {
+            "article_a": {
+                "toolbar": {"text_color": False, "background_color": False},
+                "sanitizer": {"tags": ["p", "strong"]},
+            }
+        }
+    }
 )
 def test_template_render_filter_accepts_app_specific_sanitizer():
     assert bd_richtext("<p><u>text</u></p>", "article_a") == "<p>text</p>"
