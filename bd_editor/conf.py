@@ -69,8 +69,8 @@ SAFE_ATTRIBUTES = {
     "p": {"style"},
     "pre": {"style"},
     "span": {"style"},
-    "td": {"colspan", "rowspan", "style"},
-    "th": {"colspan", "rowspan", "style"},
+    "td": {"colspan", "rowspan", "data-colwidth", "style"},
+    "th": {"colspan", "rowspan", "data-colwidth", "style"},
 }
 
 SAFE_URL_SCHEMES = {"http", "https", "mailto", "tel"}
@@ -119,24 +119,50 @@ SAFE_CSS_PROPERTIES = {
     "white-space",
 }
 
+_SMALL_TOOLBAR = {
+    "heading": True,
+    "bold": True,
+    "italic": True,
+    "underline": False,
+    "strike": False,
+    "bullet_list": True,
+    "ordered_list": True,
+    "blockquote": False,
+    "code_block": False,
+    "link": True,
+    "image": False,
+    "embed": False,
+    "table": False,
+    "source": False,
+    "undo": True,
+    "redo": True,
+}
+
+_STANDARD_TOOLBAR = {
+    **_SMALL_TOOLBAR,
+    "strike": True,
+    "blockquote": True,
+    "code_block": True,
+    "embed": True,
+    "table": True,
+    "source": True,
+}
+
+_FULL_TOOLBAR = {
+    **_STANDARD_TOOLBAR,
+    "underline": True,
+    "image": True,
+}
+
+_TOOLBAR_PRESETS = {
+    "small": _SMALL_TOOLBAR,
+    "standard": _STANDARD_TOOLBAR,
+    "full": _FULL_TOOLBAR,
+}
+
 _DEFAULTS = {
-    "toolbar": {
-        "heading": True,
-        "bold": True,
-        "italic": True,
-        "underline": False,
-        "strike": True,
-        "bullet_list": True,
-        "ordered_list": True,
-        "blockquote": True,
-        "code_block": True,
-        "link": True,
-        "image": False,
-        "embed": True,
-        "source": True,
-        "undo": True,
-        "redo": True,
-    },
+    "toolbar_preset": "standard",
+    "toolbar": deepcopy(_STANDARD_TOOLBAR),
     "sanitizer": {
         "tags": sorted(SAFE_TAGS),
         "attributes": {tag: sorted(attributes) for tag, attributes in SAFE_ATTRIBUTES.items()},
@@ -150,9 +176,12 @@ _DEFAULTS = {
         "max_image_pixels": 20_000_000,
         "output_format": "keep",
         "allowed_formats": ["JPEG", "PNG", "WEBP"],
+        "allow_format_selection": True,
+        "allow_quality_selection": True,
         "quality": 85,
         "storage_alias": "default",
     },
+    "drafts": {"enabled": False, "ttl_days": 7},
     "embeds": {"providers": ["youtube"]},
     "locale": None,
 }
@@ -161,6 +190,7 @@ _CONFIG_KEYS = set(_DEFAULTS)
 _TOOLBAR_KEYS = set(_DEFAULTS["toolbar"])
 _SANITIZER_KEYS = set(_DEFAULTS["sanitizer"])
 _UPLOAD_KEYS = set(_DEFAULTS["uploads"])
+_DRAFT_KEYS = set(_DEFAULTS["drafts"])
 _FORBIDDEN_TAGS = {"audio", "embed", "object", "script", "source", "style", "video"}
 _IMAGE_FORMATS = {"JPEG", "PNG", "WEBP"}
 _MAX_UPLOAD_BYTES = 100 * 1024 * 1024
@@ -188,12 +218,41 @@ def _merge(target, overrides, path):
             target[key] = deepcopy(value)
 
 
+def _merge_config_layer(config, overrides, path):
+    if not isinstance(overrides, Mapping):
+        _fail(path, "must be a mapping.")
+
+    if "toolbar_preset" in overrides:
+        preset = overrides["toolbar_preset"]
+        if not isinstance(preset, str) or preset not in _TOOLBAR_PRESETS:
+            _fail(
+                f"{path}.toolbar_preset",
+                "must be one of 'small', 'standard', or 'full'.",
+            )
+        config["toolbar_preset"] = preset
+        config["toolbar"] = deepcopy(_TOOLBAR_PRESETS[preset])
+
+    # A preset establishes the base toolbar for this configuration layer.
+    # Explicit toolbar options in the same layer remain the final override.
+    remaining = {key: value for key, value in overrides.items() if key != "toolbar_preset"}
+    _merge(config, remaining, path)
+
+
 def _require_list(value, path):
     if not isinstance(value, list) or any(not isinstance(item, str) for item in value):
         _fail(path, "must be a list of strings.")
 
 
 def _validate_config(config, path):
+    if (
+        not isinstance(config["toolbar_preset"], str)
+        or config["toolbar_preset"] not in _TOOLBAR_PRESETS
+    ):
+        _fail(
+            f"{path}.toolbar_preset",
+            "must be one of 'small', 'standard', or 'full'.",
+        )
+
     toolbar = config["toolbar"]
     if not isinstance(toolbar, Mapping):
         _fail(f"{path}.toolbar", "must be a mapping of toolbar names to booleans.")
@@ -307,6 +366,17 @@ def _validate_config(config, path):
             f"{path}.uploads.enabled",
             "requires Pillow; install the 'bd-editor[images]' extra.",
         )
+    for key in ("allow_format_selection", "allow_quality_selection"):
+        if type(uploads[key]) is not bool:
+            _fail(f"{path}.uploads.{key}", "must be a boolean.")
+
+    drafts = config["drafts"]
+    if not isinstance(drafts, Mapping) or set(drafts) != _DRAFT_KEYS:
+        _fail(f"{path}.drafts", "must contain the supported draft options.")
+    if type(drafts["enabled"]) is not bool:
+        _fail(f"{path}.drafts.enabled", "must be a boolean.")
+    if type(drafts["ttl_days"]) is not int or not 1 <= drafts["ttl_days"] <= 90:
+        _fail(f"{path}.drafts.ttl_days", "must be an integer from 1 to 90.")
 
     embeds = config["embeds"]
     if not isinstance(embeds, Mapping) or set(embeds) != {"providers"}:
@@ -345,7 +415,7 @@ def get_config(app_label=None):
         _fail("settings", f"unknown top-level options: {', '.join(sorted(unknown_root_options))}.")
 
     config = deepcopy(_DEFAULTS)
-    _merge(config, raw_settings.get("defaults", {}), "defaults")
+    _merge_config_layer(config, raw_settings.get("defaults", {}), "defaults")
 
     app_configs = raw_settings.get("apps", {})
     if not isinstance(app_configs, Mapping):
@@ -354,7 +424,7 @@ def get_config(app_label=None):
         if not isinstance(app_label, str):
             _fail("app_label", "must be a string or None.")
         app_overrides = app_configs.get(app_label, {})
-        _merge(config, app_overrides, f"apps.{app_label}")
+        _merge_config_layer(config, app_overrides, f"apps.{app_label}")
 
     scope = f"apps.{app_label}" if app_label in app_configs else "defaults"
     _validate_config(config, scope)

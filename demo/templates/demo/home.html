@@ -1,0 +1,79 @@
+{% extends "demo/base.html" %}
+{% load bd_editor_tags i18n %}
+
+{% block title %}{% trans "BD-Editor demo" %}{% endblock %}
+
+{% block content %}
+  <section class="intro">
+    <p class="intro-label">{% trans "Django rich-text editor" %}</p>
+    <h1>{% trans "Write and publish with BD-Editor" %}</h1>
+    <p class="intro-copy">
+      {% trans "Explore articles created in two Django apps, compare their editor toolbars, and review the settings behind them." %}
+    </p>
+    <a class="primary-link" href="{% url 'admin:index' %}">{% trans "Create an article" %}</a>
+  </section>
+
+  <section id="articles" class="content-section">
+    <div class="section-heading">
+      <div>
+        <h2>{% trans "Articles" %}</h2>
+        <p>{% trans "Articles from Blog A and Blog B appear together here." %}</p>
+      </div>
+      <span class="section-count">{{ article_count_label }}</span>
+    </div>
+
+    {% if articles %}
+      <div class="article-list">
+        {% for entry in articles %}
+          <article class="article-row">
+            <div class="article-meta">
+              <span class="app-name">{{ entry.app_name }}</span>
+              <time datetime="{{ entry.article.created_at|date:'c' }}">
+                {{ entry.article.created_at|date:"DATE_FORMAT" }}
+              </time>
+            </div>
+            <h3><a href="{{ entry.url }}">{{ entry.article.title }}</a></h3>
+            {% if entry.excerpt %}
+              <p class="article-excerpt">{{ entry.excerpt }}</p>
+            {% else %}
+              <p class="article-excerpt empty-excerpt">{% trans "This article has no text yet." %}</p>
+            {% endif %}
+            <a class="read-link" href="{{ entry.url }}">{% trans "Read article" %}</a>
+          </article>
+        {% endfor %}
+      </div>
+    {% else %}
+      <div class="empty-state">
+        <h3>{% trans "No articles yet" %}</h3>
+        <p>{% trans "Create an article in either demo app to see it listed here." %}</p>
+        <a class="primary-link" href="{% url 'admin:index' %}">{% trans "Open Django admin" %}</a>
+      </div>
+    {% endif %}
+  </section>
+
+  <section id="configuration" class="content-section configuration-section">
+    <div class="section-heading">
+      <div>
+        <h2>{% trans "How this demo is configured" %}</h2>
+        <p>{% trans "These snippets come from the running demo settings." %}</p>
+      </div>
+      <span class="file-reference">demo_project/settings.py</span>
+    </div>
+    <div class="configuration-list">
+      {% for section in configuration_sections %}
+        <article class="configuration-entry">
+          <div class="configuration-description">
+            <h3>{{ section.title }}</h3>
+            <p>{{ section.description }}</p>
+            <code class="file-reference">{{ section.path }}</code>
+          </div>
+          <pre><code>{{ section.code }}</code></pre>
+        </article>
+      {% endfor %}
+    </div>
+    <aside class="configuration-note">
+      <strong>{% trans "Security note" %}</strong>
+      <p>{% trans "Toolbar visibility is a convenience setting. Server-side sanitization still decides what HTML can be stored, and image uploads require staff and model permissions." %}</p>
+    </aside>
+  </section>
+{% endblock %}

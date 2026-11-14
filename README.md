@@ -2,7 +2,9 @@
 
 BD-Editor is a configurable rich-text editor for Django admin and forms. It
 provides a bundled editor UI, server-side HTML sanitization, per-app toolbar
-settings, optional image conversion, and allowlisted video embeds.
+settings and toolbar presets, editable HTML tables, optional browser drafts,
+modal link/image editing, image format and quality selection, and allowlisted
+video embeds.
 
 The PyPI distribution is named `bd-editor`; import it as `bd_editor`.
 
@@ -28,7 +30,8 @@ pip install "bd-editor[images]"
 
 See [the documentation](docs/en/quickstart.md) for a runnable example,
 configuration reference, localization, and security model. A two-app example
-project is in [demo/](demo/).
+project with localized article listings and live configuration explanations
+is in [demo/](demo/).
 
 ## Security boundary
 

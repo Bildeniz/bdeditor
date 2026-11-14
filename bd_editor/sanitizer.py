@@ -32,6 +32,13 @@ def _cleaner(config, allow_styles=True):
     def filter_attribute(tag, attribute, value):
         if tag == "iframe" and attribute == "src":
             return canonicalize_embed_url(value, config["embeds"]["providers"])
+        if tag in {"td", "th"} and attribute == "data-colwidth":
+            widths = value.split(",")
+            if not widths or len(widths) > 32:
+                return None
+            if any(not width.isdecimal() or not 1 <= int(width) <= 5000 for width in widths):
+                return None
+            return ",".join(str(int(width)) for width in widths)
         if tag == "iframe" and attribute in {"width", "height"}:
             if value.isdecimal():
                 return str(min(int(value), 1920 if attribute == "width" else 1080))
@@ -99,7 +106,7 @@ class _PlainTextExtractor(HTMLParser):
         super().__init__(convert_charrefs=True)
         self.parts = []
 
-    def handle_starttag(self, tag, attrs):
+    def handle_starttag(self, tag, _attrs):
         if tag in self._BLOCK_TAGS:
             self.parts.append("\n")
 

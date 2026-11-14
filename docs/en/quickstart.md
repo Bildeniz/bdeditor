@@ -78,14 +78,15 @@ from `bd_editor.sanitizer`.
 
 ## Configure the toolbar
 
-Toolbar settings are partial, nested overrides. The built-in defaults are
-merged with `BD_EDITOR["defaults"]`, followed by the override for the model's
-Django app label:
+Choose a ready-made profile with `toolbar_preset` (`small`, `standard`, or
+`full`), then override only the buttons you want to change. Toolbar settings
+are partial, nested overrides, applied after the selected profile:
 
 ```python
 # settings.py
 BD_EDITOR = {
     "defaults": {
+        "toolbar_preset": "standard",
         "toolbar": {
             "heading": True,
             "bold": True,
@@ -127,6 +128,8 @@ BD_EDITOR = {
             "max_image_pixels": 20_000_000,
             "output_format": "WEBP",
             "allowed_formats": ["JPEG", "PNG", "WEBP"],
+            "allow_format_selection": True,
+            "allow_quality_selection": True,
             "quality": 85,
             "storage_alias": "default",
         },
@@ -141,7 +144,29 @@ images, checked against byte and pixel limits, re-encoded, and stored using the
 selected Django storage alias. The `output_format` can be `keep`, `JPEG`,
 `PNG`, or `WEBP`; Pillow is required when uploads are enabled. Video files are
 never accepted. The editor's embed button accepts only URLs for enabled
-providers.
+providers. The image dialog lets authors choose an allowed output format, a
+quality preset based on the image's dimensions and file size, and alternative
+text. PNG stays lossless.
+
+The standard toolbar also supports HTML tables. Insert a table with a header
+row, then use its contextual controls to add or remove rows and columns.
+
+## Keep an optional browser draft
+
+Draft persistence is disabled by default. To save and restore unfinished
+content from this browser only:
+
+```python
+BD_EDITOR = {
+    "defaults": {
+        "drafts": {"enabled": True, "ttl_days": 7},
+    },
+}
+```
+
+Drafts use browser `localStorage`, expire automatically, and are cleared after
+a successful form save. Review the [security notes](security.md) before
+enabling this on shared browsers or for sensitive content.
 
 ## Demo
 
@@ -156,6 +181,8 @@ python manage.py createsuperuser
 python manage.py runserver
 ```
 
-Open `/admin/` and create an article in either demo app. See
+Open `/` for the combined article list and localized settings guide. Open
+`/admin/` and create an article in either demo app; saved articles appear on
+the public demo page. See
 [configuration](configuration.md), [API reference](api.md), and
 [security](security.md) for all settings and boundaries.

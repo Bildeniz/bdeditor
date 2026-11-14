@@ -27,6 +27,14 @@ upload endpoint. The endpoint accepts CSRF-protected image uploads only from
 active staff users who also have add/change permission for the field's model.
 Standalone upload-enabled forms must provide a model label to the widget.
 
+## Toolbar presets and tables
+
+Set `toolbar_preset` to `small`, `standard`, or `full` globally or per app.
+Then apply individual boolean `toolbar` overrides. The standard and full
+profiles include a table insert action. When the cursor is inside a table, the
+editor exposes contextual commands to insert/delete rows and columns, toggle a
+header row, or delete the table.
+
 ## Sanitization helpers
 
 ```python

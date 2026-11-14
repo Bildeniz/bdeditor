@@ -55,6 +55,17 @@ production, serve user media from a separate origin where practical, configure
 your reverse proxy's request-body limit, and use a storage backend with
 appropriate access controls.
 
+## Browser drafts
+
+Draft persistence is disabled by default. When enabled, draft text (including
+HTML source mode) is saved in browser `localStorage`, scoped to the current
+page, model, object, and field, and expires after the configured retention
+period. It is not uploaded to a draft endpoint. A browser profile shared by
+multiple people can expose locally stored draft content to another person
+using the same profile. Do not enable this unless browser-side storage is
+appropriate for the content and users. Draft data is cleared after successful
+form submission; drafts from failed form submissions remain available.
+
 ## Database and rendering boundary
 
 `RichTextField` sanitizes Django-managed field/form/ORM paths, including

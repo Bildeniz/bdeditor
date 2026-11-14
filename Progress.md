@@ -8,6 +8,7 @@
 - Milestone 4: complete.
 - Milestone 5: complete.
 - Milestone 6: complete.
+- Follow-up admin and demo UX changes: complete.
 
 ## Completed milestones
 
@@ -25,12 +26,29 @@
 - Built and validated the universal wheel and source distribution; Twine
   metadata checks pass and the wheel contains the required static, template,
   and localization assets.
-- The 20-test suite passes on Python 3.14 with Django 5.2.19, 6.0.10, and
+- The 28-test suite passes on Python 3.14 with Django 6.1.3; the
+  earlier 20-test suite also passed on Django 5.2.19, 6.0.10, and
   6.1.3. CI is configured for the supported Python/Django combinations.
+- Added `small`, `standard`, and `full` toolbar presets with app-level
+  overrides, editable HTML tables, and an opt-in localStorage draft setting.
+- Added icon-based CKEditor-style toolbar rows, modal link/image/video/table
+  workflows, and server-validated per-upload image format/quality choices.
+- Added focused tests for profile resolution, table attributes, and image
+  format/quality selection.
+- Prevented Enter in image/link/embed/table dialog inputs from implicitly
+  submitting the containing admin form; verified image upload by keyboard in
+  Django admin without navigating away or saving the article.
+- Added a bilingual demo homepage with combined sanitized article listings,
+  actual global/app configuration snippets, and localized explanations.
+- Verified English/Turkish demo views, app article detail, and Turkish admin
+  editor in a live browser.
+- The final source distribution includes both localized demo catalogs,
+  templates, and static assets; Twine metadata checks and archive-content
+  verification both pass.
 
 ## Known boundaries
 
-- Django-managed ORM and form write paths will be validated; raw SQL and direct
+- Django-managed ORM and form write paths are validated; raw SQL and direct
   database writes cannot be intercepted by the package.
 - Image processing will be an optional Pillow extra. Video uploads are not
   supported; only configured video embeds will be accepted.

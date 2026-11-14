@@ -1,0 +1,18 @@
+{% extends "demo/base.html" %}
+{% load bd_editor_tags i18n %}
+
+{% block title %}{{ article.title }} | BD-Editor{% endblock %}
+
+{% block content %}
+  <article class="article-detail">
+    <a class="back-link" href="{% url 'home' %}#articles">← {% trans "All articles" %}</a>
+    <div class="article-meta">
+      <span class="app-name">
+        {% if app_label == "blog_a" %}{% trans "Blog A" %}{% else %}{% trans "Blog B" %}{% endif %}
+      </span>
+      <time datetime="{{ article.created_at|date:'c' }}">{{ article.created_at|date:"DATE_FORMAT" }}</time>
+    </div>
+    <h1>{{ article.title }}</h1>
+    <div class="article-body">{{ article.body|bd_richtext:app_label }}</div>
+  </article>
+{% endblock %}

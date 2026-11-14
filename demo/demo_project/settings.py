@@ -37,7 +37,7 @@ MIDDLEWARE = [
 TEMPLATES = [
     {
         "BACKEND": "django.template.backends.django.DjangoTemplates",
-        "DIRS": [],
+        "DIRS": [BASE_DIR / "templates"],
         "APP_DIRS": True,
         "OPTIONS": {
             "context_processors": [
@@ -61,13 +61,15 @@ STORAGES = {
     "staticfiles": {"BACKEND": "django.contrib.staticfiles.storage.StaticFilesStorage"},
 }
 
-LANGUAGE_CODE = "tr"
+LANGUAGE_CODE = "en"
 LANGUAGES = [("en", "English"), ("tr", "Türkçe")]
+LOCALE_PATHS = [BASE_DIR / "locale"]
 TIME_ZONE = "UTC"
 USE_I18N = True
 USE_TZ = True
 
 STATIC_URL = "/static/"
+STATICFILES_DIRS = [BASE_DIR / "static"]
 STATIC_ROOT = BASE_DIR / "staticfiles"
 MEDIA_URL = "/media/"
 MEDIA_ROOT = BASE_DIR / "media"
@@ -75,14 +77,7 @@ DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 BD_EDITOR = {
     "defaults": {
-        "toolbar": {
-            "heading": True,
-            "bold": True,
-            "italic": True,
-            "underline": False,
-            "image": True,
-            "embed": True,
-        },
+        "toolbar_preset": "full",
         "uploads": {
             "enabled": True,
             "output_format": "keep",
@@ -91,6 +86,7 @@ BD_EDITOR = {
             "quality": 85,
         },
         "embeds": {"providers": ["youtube", "vimeo"]},
+        "locale": None,
     },
     "apps": {
         "blog_a": {

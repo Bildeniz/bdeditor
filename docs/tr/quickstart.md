@@ -77,10 +77,14 @@ modülündedir.
 
 ## Araç çubuğunu yapılandırma
 
+Hazır profiller için `toolbar_preset` değerini (`small`, `standard`, `full`)
+seçin; sonra yalnızca değiştirmek istediğiniz düğmeleri yazın:
+
 ```python
 # settings.py
 BD_EDITOR = {
     "defaults": {
+        "toolbar_preset": "standard",
         "toolbar": {
             "heading": True,
             "bold": True,
@@ -112,6 +116,8 @@ BD_EDITOR = {
             "max_image_pixels": 20_000_000,
             "output_format": "WEBP",
             "allowed_formats": ["JPEG", "PNG", "WEBP"],
+            "allow_format_selection": True,
+            "allow_quality_selection": True,
             "quality": 85,
             "storage_alias": "default",
         },
@@ -126,6 +132,29 @@ ekleme veya değiştirme izni de olmalıdır. Dosya Pillow ile gerçek görsel i
 Storage'a kaydedilir. `output_format`, `keep`, `JPEG`, `PNG` veya `WEBP`
 olabilir. Video dosyaları reddedilir; yalnızca etkin video sağlayıcılarına ait
 URL'ler gömülebilir.
+Görsel penceresinde izinli çıktı biçimini, boyut ve piksel ölçülerine göre
+önerilen kalite seçeneğini ve alternatif metni belirleyebilirsiniz. PNG
+kayıpsızdır.
+
+`standard` profili HTML tabloları da ekler. Tablo içinde satır ve sütun ekleyip
+kaldırmak için bağlamsal tablo araçlarını kullanın.
+
+## İsteğe bağlı tarayıcı taslağı
+
+Taslak kaydı varsayılan olarak kapalıdır. Yarım kalan içeriği yalnızca bu
+tarayıcıda saklamak için:
+
+```python
+BD_EDITOR = {
+    "defaults": {
+        "drafts": {"enabled": True, "ttl_days": 7},
+    },
+}
+```
+
+Taslaklar `localStorage` alanında saklanır, süresi dolar ve başarılı form
+kaydından sonra temizlenir. Ortak bilgisayarda veya hassas içerikte
+etkinleştirmeden önce [güvenlik notlarını](security.md) okuyun.
 
 ## Demo
 
@@ -140,6 +169,8 @@ python manage.py createsuperuser
 python manage.py runserver
 ```
 
-`/admin/` adresini açıp iki demo uygulamasından birinde yazı oluşturun.
+Birleşik yazı listesi ve yerelleştirilmiş ayar açıklamaları için `/` adresini
+açın. `/admin/` adresinden demo uygulamalarından birinde yazı oluşturun;
+kaydedilen yazılar demo ana sayfasında listelenir.
 [Yapılandırma](configuration.md), [API](api.md) ve
 [güvenlik](security.md) belgelerine de bakın.

@@ -1,3 +1,5 @@
+from importlib.util import find_spec
+
 import pytest
 from django.core.exceptions import ImproperlyConfigured
 from django.db import connection
@@ -64,6 +66,18 @@ def test_script_examples_inside_code_blocks_remain_inert_text():
     assert "<script>" not in cleaned
 
 
+def test_table_colwidth_attributes_are_validated_before_storage():
+    cleaned = sanitize_html(
+        '<table><tbody><tr>'
+        '<th data-colwidth="120,240">Heading</th>'
+        '<td data-colwidth="120,evil">Cell</td>'
+        "</tr></tbody></table>"
+    )
+
+    assert 'data-colwidth="120,240"' in cleaned
+    assert "120,evil" not in cleaned
+
+
 @override_settings(
     BD_EDITOR={
         "defaults": {"toolbar": {"heading": True, "underline": False}},
@@ -95,6 +109,62 @@ def test_unsafe_tags_cannot_be_enabled_by_settings():
 @override_settings(BD_EDITOR={"defaults": {"toolbar": {"not_a_button": True}}})
 def test_unknown_configuration_is_rejected():
     with pytest.raises(ImproperlyConfigured, match="unknown option"):
+        get_config()
+
+
+@override_settings(
+    BD_EDITOR={
+        "defaults": {
+            "toolbar_preset": "small",
+            "toolbar": {"underline": True},
+        },
+        "apps": {
+            "article_b": {
+                "toolbar_preset": "standard",
+                "toolbar": {"heading": False},
+            }
+        },
+    }
+)
+def test_toolbar_presets_keep_partial_global_and_app_overrides():
+    compact = get_config()
+    app_config = get_config("article_b")
+
+    assert compact["toolbar_preset"] == "small"
+    assert compact["toolbar"]["table"] is False
+    assert compact["toolbar"]["underline"] is True
+    assert app_config["toolbar_preset"] == "standard"
+    assert app_config["toolbar"]["table"] is True
+    assert app_config["toolbar"]["heading"] is False
+    assert app_config["drafts"] == {"enabled": False, "ttl_days": 7}
+
+
+@pytest.mark.skipif(
+    find_spec("PIL") is None,
+    reason="Pillow is optional",
+)
+@override_settings(
+    BD_EDITOR={
+        "apps": {
+            "article_b": {
+                "toolbar_preset": "full",
+                "uploads": {"enabled": True},
+            }
+        }
+    }
+)
+def test_full_toolbar_preset_includes_image_upload_controls():
+    full = get_config("article_b")
+
+    assert full["toolbar_preset"] == "full"
+    assert full["toolbar"]["image"] is True
+    assert full["toolbar"]["underline"] is True
+    assert full["uploads"]["enabled"] is True
+
+
+@override_settings(BD_EDITOR={"defaults": {"drafts": {"ttl_days": 91}}})
+def test_draft_retention_limit_is_validated():
+    with pytest.raises(ImproperlyConfigured, match="from 1 to 90"):
         get_config()
 
 

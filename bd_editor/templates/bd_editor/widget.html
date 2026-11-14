@@ -1,10 +1,122 @@
 {% include "django/forms/widgets/textarea.html" %}
 <div class="bd-editor-shell" data-bd-editor-root hidden>
-  <div class="bd-editor-toolbar" role="toolbar"></div>
+  <div class="bd-editor-header">
+    <div class="bd-editor-toolbar" role="toolbar">
+      <div class="bd-editor-toolbar-row" data-bd-toolbar-primary></div>
+      <div class="bd-editor-toolbar-row" data-bd-toolbar-format></div>
+      <div class="bd-editor-toolbar-row bd-editor-table-tools" data-bd-toolbar-table hidden></div>
+    </div>
+    <div class="bd-editor-mode-switch" role="group">
+      <button type="button" class="bd-editor-mode-button" data-bd-mode="text"></button>
+      <button type="button" class="bd-editor-mode-button" data-bd-mode="source"></button>
+    </div>
+  </div>
   <div class="bd-editor-canvas"></div>
   <div class="bd-editor-source-wrapper" hidden>
     <label class="bd-editor-source-label"></label>
     <textarea class="bd-editor-source-view" spellcheck="false"></textarea>
   </div>
   <p class="bd-editor-status" aria-live="polite"></p>
+
+  <dialog class="bd-editor-dialog" data-bd-dialog="image">
+    <div class="bd-editor-dialog-panel">
+      <header class="bd-editor-dialog-header">
+        <h2 data-bd-image-title></h2>
+        <button type="button" class="bd-editor-dialog-close" data-bd-image-close></button>
+      </header>
+      <p class="bd-editor-image-details" data-bd-image-details></p>
+      <label class="bd-editor-dialog-field" data-bd-image-format-label>
+        <span data-bd-image-format-text></span>
+        <select data-bd-image-format></select>
+      </label>
+      <div class="bd-editor-dialog-field" data-bd-image-quality-group>
+        <label>
+          <span data-bd-image-quality-label></span>
+          <select data-bd-image-quality-preset></select>
+        </label>
+        <input type="range" min="1" max="100" step="1" data-bd-image-quality>
+        <output data-bd-image-quality-output></output>
+        <p class="bd-editor-dialog-hint" data-bd-image-quality-hint></p>
+      </div>
+      <label class="bd-editor-dialog-field">
+        <span data-bd-image-alt-text></span>
+        <input type="text" data-bd-image-alt maxlength="500">
+        <span class="bd-editor-dialog-hint" data-bd-image-alt-hint></span>
+      </label>
+      <p class="bd-editor-dialog-error" data-bd-image-error aria-live="polite"></p>
+      <footer class="bd-editor-dialog-actions">
+        <button type="button" class="bd-editor-button-secondary" data-bd-image-cancel></button>
+        <button type="button" class="bd-editor-button-primary" data-bd-image-insert></button>
+      </footer>
+    </div>
+  </dialog>
+
+  <dialog class="bd-editor-dialog" data-bd-dialog="link">
+    <div class="bd-editor-dialog-panel">
+      <header class="bd-editor-dialog-header">
+        <h2 data-bd-link-title></h2>
+        <button type="button" class="bd-editor-dialog-close" data-bd-link-close></button>
+      </header>
+      <label class="bd-editor-dialog-field">
+        <span data-bd-link-text-label></span>
+        <input type="text" data-bd-link-text maxlength="1000">
+      </label>
+      <label class="bd-editor-dialog-field">
+        <span data-bd-link-url-label></span>
+        <input type="url" inputmode="url" data-bd-link-url>
+      </label>
+      <p class="bd-editor-dialog-error" data-bd-link-error aria-live="polite"></p>
+      <footer class="bd-editor-dialog-actions">
+        <button type="button" class="bd-editor-button-danger" data-bd-link-remove hidden></button>
+        <button type="button" class="bd-editor-button-secondary" data-bd-link-cancel></button>
+        <button type="button" class="bd-editor-button-primary" data-bd-link-apply></button>
+      </footer>
+    </div>
+  </dialog>
+
+  <dialog class="bd-editor-dialog" data-bd-dialog="embed">
+    <div class="bd-editor-dialog-panel">
+      <header class="bd-editor-dialog-header">
+        <h2 data-bd-embed-title></h2>
+        <button type="button" class="bd-editor-dialog-close" data-bd-embed-close></button>
+      </header>
+      <label class="bd-editor-dialog-field">
+        <span data-bd-embed-url-label></span>
+        <input type="url" inputmode="url" data-bd-embed-url>
+      </label>
+      <p class="bd-editor-dialog-error" data-bd-embed-error aria-live="polite"></p>
+      <footer class="bd-editor-dialog-actions">
+        <button type="button" class="bd-editor-button-secondary" data-bd-embed-cancel></button>
+        <button type="button" class="bd-editor-button-primary" data-bd-embed-insert></button>
+      </footer>
+    </div>
+  </dialog>
+
+  <dialog class="bd-editor-dialog" data-bd-dialog="table">
+    <div class="bd-editor-dialog-panel bd-editor-table-dialog-panel">
+      <header class="bd-editor-dialog-header">
+        <h2 data-bd-table-title></h2>
+        <button type="button" class="bd-editor-dialog-close" data-bd-table-close></button>
+      </header>
+      <div class="bd-editor-table-size-fields">
+        <label class="bd-editor-dialog-field">
+          <span data-bd-table-rows-label></span>
+          <input type="number" min="1" max="20" value="3" data-bd-table-rows>
+        </label>
+        <label class="bd-editor-dialog-field">
+          <span data-bd-table-columns-label></span>
+          <input type="number" min="1" max="20" value="3" data-bd-table-columns>
+        </label>
+      </div>
+      <label class="bd-editor-table-header-option">
+        <input type="checkbox" checked data-bd-table-header-row>
+        <span data-bd-table-header-label></span>
+      </label>
+      <p class="bd-editor-dialog-error" data-bd-table-error aria-live="polite"></p>
+      <footer class="bd-editor-dialog-actions">
+        <button type="button" class="bd-editor-button-secondary" data-bd-table-cancel></button>
+        <button type="button" class="bd-editor-button-primary" data-bd-table-insert></button>
+      </footer>
+    </div>
+  </dialog>
 </div>

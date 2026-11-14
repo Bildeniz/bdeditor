@@ -25,6 +25,14 @@ kapalıysa normal textarea görünür; tüm statik dosyalar paketle birlikte gel
 ilgili model için ekleme/değiştirme izni bulunmalıdır. Bağımsız formlar
 görsel yükleme etkinse widget'a model etiketini sağlamalıdır.
 
+## Araç çubuğu profilleri ve tablolar
+
+Global veya app bazında `toolbar_preset` için `small`, `standard` veya `full`
+seçin. Ardından boolean `toolbar` ayarlarıyla düğmeleri özelleştirin.
+`standard` ve `full` profillerinde tablo ekleme bulunur. İmleç tablodayken
+bağlamsal araçlarla satır/sütun ekleyip silebilir, başlık satırını
+değiştirebilir veya tabloyu silebilirsiniz.
+
 ## Temizleme yardımcıları
 
 ```python

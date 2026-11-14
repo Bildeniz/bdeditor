@@ -7,12 +7,14 @@
     "node": ">=20"
   },
   "scripts": {
-    "build": "esbuild src/editor.js --bundle --minify --format=iife --legal-comments=external --outfile=../bd_editor/static/bd_editor/editor.js",
+    "build": "esbuild src/editor.js --bundle --minify --format=iife --legal-comments=external --loader:.svg=text --outfile=../bd_editor/static/bd_editor/editor.js",
     "check": "node --check src/editor.js"
   },
   "dependencies": {
+    "@tabler/icons": "^3.51.0",
     "@tiptap/core": "^3.34.0",
     "@tiptap/extension-image": "^3.34.0",
+    "@tiptap/extension-table": "^3.34.0",
     "@tiptap/starter-kit": "^3.34.0"
   },
   "devDependencies": {

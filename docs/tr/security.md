@@ -54,6 +54,16 @@ olmayan dosyalar reddedilir.
 medyalarını mümkünse ayrı bir origin'den sunun, reverse proxy üzerinde istek
 boyutu sınırı koyun ve storage erişim yetkilerini ayrıca düzenleyin.
 
+## Tarayıcı taslakları
+
+Taslak kaydı varsayılan olarak kapalıdır. Etkinleştirildiğinde içerik
+(HTML-kaynak modu dahil) bu tarayıcının `localStorage` alanına; sayfa, model,
+kayıt ve alan bazında kaydedilir ve yapılandırılan süre sonunda silinir.
+Taslaklar sunucuya yüklenmez. Tarayıcı profili birden fazla kişi tarafından
+kullanılıyorsa yerel taslaklar sonraki kullanıcıya görünebilir. İçeriğiniz ve
+kullanıcılarınız için uygun değilse bu özelliği etkinleştirmeyin. Başarılı
+form kaydından sonra taslak silinir; hatalı form gönderimlerinde korunur.
+
 ## Veritabanı ve görüntüleme sınırı
 
 `RichTextField`, Django tarafından yönetilen form/alan/ORM yollarında

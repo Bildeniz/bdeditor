@@ -46,6 +46,18 @@ msgstr "İstek içerik uzunluğu geçersiz."
 msgid "The upload request is too large."
 msgstr "Yükleme isteği çok büyük."
 
+msgid "The selected image format is not allowed."
+msgstr "Seçilen görsel biçimine izin verilmiyor."
+
+msgid "The image format is fixed by configuration."
+msgstr "Görsel biçimi yapılandırma tarafından sabitlenmiş."
+
+msgid "The selected image quality is invalid."
+msgstr "Seçilen görsel kalitesi geçersiz."
+
+msgid "Image quality is fixed by configuration."
+msgstr "Görsel kalitesi yapılandırma tarafından sabitlenmiş."
+
 msgid "A model label is required for image uploads."
 msgstr "Görsel yüklemek için model etiketi gereklidir."
 

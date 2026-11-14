@@ -58,6 +58,118 @@ def test_staff_can_upload_and_reencode_image(settings, tmp_path):
 
 
 @pytest.mark.django_db
+def test_staff_can_choose_an_allowed_image_format_and_quality(settings, monkeypatch):
+    _enable_uploads(settings, output_format="JPEG")
+    user = get_user_model().objects.create_superuser(
+        username="format-editor",
+        email="format-editor@example.test",
+        password="test-password",
+    )
+    client = Client()
+    client.force_login(user)
+    captured = {}
+
+    def fake_store(uploaded_file, config):
+        captured["output_format"] = config["output_format"]
+        captured["quality"] = config["quality"]
+        return {"url": "/bd_editor/images/example.webp", "width": 4, "height": 3, "format": "WEBP"}
+
+    monkeypatch.setattr("bd_editor.views.store_uploaded_image", fake_store)
+    response = client.post(
+        "/bd-editor/upload/",
+        {
+            "image": SimpleUploadedFile("cover.png", _png_bytes(), content_type="image/png"),
+            "app_label": "tests",
+            "model_label": "tests.article",
+            "format": "WEBP",
+            "quality": "61",
+        },
+    )
+
+    assert response.status_code == 201
+    assert captured == {"output_format": "WEBP", "quality": 61}
+
+
+@pytest.mark.django_db
+def test_upload_rejects_a_client_selected_format_when_configuration_locks_it(settings):
+    _enable_uploads(
+        settings,
+        output_format="JPEG",
+        allow_format_selection=False,
+    )
+    user = get_user_model().objects.create_superuser(
+        username="locked-format-editor",
+        email="locked-format-editor@example.test",
+        password="test-password",
+    )
+    client = Client()
+    client.force_login(user)
+
+    response = client.post(
+        "/bd-editor/upload/",
+        {
+            "image": SimpleUploadedFile("cover.png", _png_bytes(), content_type="image/png"),
+            "app_label": "tests",
+            "model_label": "tests.article",
+            "format": "WEBP",
+        },
+    )
+
+    assert response.status_code == 400
+    assert "fixed" in response.json()["error"].lower()
+
+
+@pytest.mark.django_db
+def test_upload_rejects_out_of_range_client_quality(settings):
+    _enable_uploads(settings)
+    user = get_user_model().objects.create_superuser(
+        username="quality-editor",
+        email="quality-editor@example.test",
+        password="test-password",
+    )
+    client = Client()
+    client.force_login(user)
+
+    response = client.post(
+        "/bd-editor/upload/",
+        {
+            "image": SimpleUploadedFile("cover.png", _png_bytes(), content_type="image/png"),
+            "app_label": "tests",
+            "model_label": "tests.article",
+            "quality": "101",
+        },
+    )
+
+    assert response.status_code == 400
+    assert "quality" in response.json()["error"].lower()
+
+
+@pytest.mark.django_db
+def test_upload_rejects_quality_when_configuration_locks_it(settings):
+    _enable_uploads(settings, allow_quality_selection=False)
+    user = get_user_model().objects.create_superuser(
+        username="fixed-quality-editor",
+        email="fixed-quality-editor@example.test",
+        password="test-password",
+    )
+    client = Client()
+    client.force_login(user)
+
+    response = client.post(
+        "/bd-editor/upload/",
+        {
+            "image": SimpleUploadedFile("cover.png", _png_bytes(), content_type="image/png"),
+            "app_label": "tests",
+            "model_label": "tests.article",
+            "quality": "61",
+        },
+    )
+
+    assert response.status_code == 400
+    assert "fixed" in response.json()["error"].lower()
+
+
+@pytest.mark.django_db
 def test_non_staff_users_cannot_upload_images(settings):
     _enable_uploads(settings)
     user = get_user_model().objects.create_user(username="visitor", password="test-password")

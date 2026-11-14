@@ -17,6 +17,11 @@ public-facing overview is `README.md`.
 - `bd_editor/locale/` stores editor JSON labels and Django message catalogs.
 - `frontend/src/editor.js` is the Tiptap-based browser editor source. Build its
   local static bundle before packaging.
+- `bd_editor/static/bd_editor/THIRD_PARTY_NOTICES.txt` includes bundled
+  frontend component licenses.
+- The public two-app demo lives under `demo/`; its localized article index,
+  configuration descriptions, and Django catalogs are source-distribution
+  content, not runtime package dependencies.
 
 ## Security invariants
 
@@ -32,6 +37,8 @@ public-facing overview is `README.md`.
   remote resources.
 - Validate images by their decoded content, size, and pixel dimensions. Use
   generated storage names rather than client-supplied paths.
+- Optional editor drafts are stored only in browser localStorage and must stay
+  opt-in with a documented expiration and shared-browser privacy warning.
 - Protect image uploads with CSRF, an active staff check, and add/change
   permission for the associated model.
 - Only mark sanitized output safe in the dedicated template integration.
@@ -56,6 +63,8 @@ public-facing overview is `README.md`.
   `python scripts/generate_third_party_notices.py` after changing frontend
   dependencies.
 - Compile Django message catalogs with `python scripts/compile_translations.py`.
+- Demo UI templates and localized catalogs live under `demo/templates/` and
+  `demo/locale/`; the catalog compiler handles both demo and package messages.
 - Keep compatibility tests limited to valid Django/Python combinations.
 - Add English comments for non-obvious security and integration decisions, not
   for routine code.

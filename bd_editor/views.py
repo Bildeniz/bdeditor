@@ -104,8 +104,45 @@ def upload_image(request):
     if uploaded_file is None:
         return JsonResponse({"error": _("An image file is required.")}, status=400)
 
+    upload_config = dict(config["uploads"])
+    requested_format = request.POST.get("format")
+    if upload_config["allow_format_selection"]:
+        if requested_format is not None:
+            if requested_format not in upload_config["allowed_formats"]:
+                return JsonResponse(
+                    {"error": _("The selected image format is not allowed.")},
+                    status=400,
+                )
+            upload_config["output_format"] = requested_format
+    elif requested_format is not None:
+        return JsonResponse(
+            {"error": _("The image format is fixed by configuration.")},
+            status=400,
+        )
+
+    requested_quality = request.POST.get("quality")
+    if upload_config["allow_quality_selection"]:
+        if requested_quality is not None:
+            if not requested_quality.isdecimal() or len(requested_quality) > 3:
+                return JsonResponse(
+                    {"error": _("The selected image quality is invalid.")},
+                    status=400,
+                )
+            quality = int(requested_quality)
+            if not 1 <= quality <= 100:
+                return JsonResponse(
+                    {"error": _("The selected image quality is invalid.")},
+                    status=400,
+                )
+            upload_config["quality"] = quality
+    elif requested_quality is not None:
+        return JsonResponse(
+            {"error": _("Image quality is fixed by configuration.")},
+            status=400,
+        )
+
     try:
-        result = store_uploaded_image(uploaded_file, config["uploads"])
+        result = store_uploaded_image(uploaded_file, upload_config)
     except ValidationError as error:
         return JsonResponse({"error": error.messages[0]}, status=400)
 

@@ -1,0 +1,97 @@
+msgid ""
+msgstr ""
+"Content-Type: text/plain; charset=UTF-8\n"
+"Language: tr\n"
+"Plural-Forms: nplurals=2; plural=(n > 1);\n"
+
+msgid "BD-Editor demo"
+msgstr "BD-Editor demosu"
+
+msgid "Main navigation"
+msgstr "Ana menü"
+
+msgid "Articles"
+msgstr "Yazılar"
+
+msgid "Configuration"
+msgstr "Yapılandırma"
+
+msgid "Open admin"
+msgstr "Yönetim panelini aç"
+
+msgid "Language"
+msgstr "Dil"
+
+msgid "Apply"
+msgstr "Uygula"
+
+msgid "A secure, localized rich-text editor for Django."
+msgstr "Django için güvenli ve yerelleştirilebilir zengin metin editörü."
+
+msgid "Django rich-text editor"
+msgstr "Django zengin metin editörü"
+
+msgid "Write and publish with BD-Editor"
+msgstr "BD-Editor ile yazın ve yayınlayın"
+
+msgid "Explore articles created in two Django apps, compare their editor toolbars, and review the settings behind them."
+msgstr "İki Django uygulamasında yazılan makaleleri inceleyin, editör araç çubuklarını karşılaştırın ve ayarlarına göz atın."
+
+msgid "Create an article"
+msgstr "Yeni yazı oluştur"
+
+msgid "Articles from Blog A and Blog B appear together here."
+msgstr "Blog A ve Blog B yazıları burada birlikte listelenir."
+
+msgid "%(article_count)s article"
+msgid_plural "%(article_count)s articles"
+msgstr[0] "%(article_count)s yazı"
+msgstr[1] "%(article_count)s yazı"
+
+msgid "This article has no text yet."
+msgstr "Bu yazıda henüz metin yok."
+
+msgid "Read article"
+msgstr "Yazıyı oku"
+
+msgid "No articles yet"
+msgstr "Henüz yazı yok"
+
+msgid "Create an article in either demo app to see it listed here."
+msgstr "Yazının burada görünmesi için demo uygulamalarından birinde yazı oluşturun."
+
+msgid "Open Django admin"
+msgstr "Django yönetim panelini aç"
+
+msgid "How this demo is configured"
+msgstr "Bu demo nasıl yapılandırıldı?"
+
+msgid "These snippets come from the running demo settings."
+msgstr "Bu kod örnekleri çalışan demonun ayarlarından alınmıştır."
+
+msgid "Shared editor defaults"
+msgstr "Paylaşılan editör varsayılanları"
+
+msgid "The full toolbar profile is the starting point for both apps. Image uploads use Django storage, accept JPEG, PNG, and WebP, and allow editors to choose output format and quality."
+msgstr "Her iki uygulama da full araç çubuğu profiliyle başlar. Görseller Django Storage ile saklanır; JPEG, PNG ve WebP biçimleri desteklenir, çıktı biçimi ve kalitesi seçilebilir."
+
+msgid "Blog A keeps the heading selector and turns underline off. All other buttons inherit the shared profile."
+msgstr "Blog A başlık seçicisini kullanır ve altı çizili biçimlendirmeyi kapatır. Diğer düğmeler paylaşılan profilden alınır."
+
+msgid "Blog B hides the heading selector and turns underline on. All other buttons inherit the shared profile."
+msgstr "Blog B başlık seçicisini gizler ve altı çizili biçimlendirmeyi açar. Diğer düğmeler paylaşılan profilden alınır."
+
+msgid "Security note"
+msgstr "Güvenlik notu"
+
+msgid "Toolbar visibility is a convenience setting. Server-side sanitization still decides what HTML can be stored, and image uploads require staff and model permissions."
+msgstr "Araç çubuğu görünürlüğü bir kullanım tercihidir. Saklanabilecek HTML'yi sunucu tarafı temizleyici belirler; görsel yüklemek için personel ve model izinleri gerekir."
+
+msgid "All articles"
+msgstr "Tüm yazılar"
+
+msgid "Blog A"
+msgstr "Blog A"
+
+msgid "Blog B"
+msgstr "Blog B"

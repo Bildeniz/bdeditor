@@ -7,9 +7,13 @@ except ImportError as error:
 
 
 ROOT = Path(__file__).resolve().parents[1]
-CATALOGS = ROOT / "bd_editor" / "locale"
+CATALOG_DIRECTORIES = [
+    ROOT / "bd_editor" / "locale",
+    ROOT / "demo" / "locale",
+]
 
-for po_path in CATALOGS.glob("*/LC_MESSAGES/django.po"):
-    mo_path = po_path.with_suffix(".mo")
-    polib.pofile(str(po_path)).save_as_mofile(str(mo_path))
-    print(f"Compiled {po_path.relative_to(ROOT)} -> {mo_path.relative_to(ROOT)}")
+for catalog_directory in CATALOG_DIRECTORIES:
+    for po_path in catalog_directory.glob("*/LC_MESSAGES/django.po"):
+        mo_path = po_path.with_suffix(".mo")
+        polib.pofile(str(po_path)).save_as_mofile(str(mo_path))
+        print(f"Compiled {po_path.relative_to(ROOT)} -> {mo_path.relative_to(ROOT)}")

@@ -1,0 +1,42 @@
+{% load i18n static %}
+<!doctype html>
+<html lang="{{ request.LANGUAGE_CODE|default:'en' }}">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="color-scheme" content="light">
+    <title>{% block title %}{% trans "BD-Editor demo" %}{% endblock %}</title>
+    <link rel="stylesheet" href="{% static 'demo/demo.css' %}">
+  </head>
+  <body>
+    <header class="site-header">
+      <a class="brand" href="{% url 'home' %}">BD-Editor</a>
+      <nav class="site-nav" aria-label="{% trans 'Main navigation' %}">
+        <a href="{% url 'home' %}#articles">{% trans "Articles" %}</a>
+        <a href="{% url 'home' %}#configuration">{% trans "Configuration" %}</a>
+        <a class="admin-link" href="{% url 'admin:index' %}">{% trans "Open admin" %}</a>
+      </nav>
+      <form class="language-form" action="{% url 'set_language' %}" method="post">
+        {% csrf_token %}
+        <input type="hidden" name="next" value="{{ request.get_full_path }}">
+        <label for="demo-language">{% trans "Language" %}</label>
+        <select id="demo-language" name="language">
+          {% get_available_languages as available_languages %}
+          {% for language_code, language_name in available_languages %}
+            <option value="{{ language_code }}" {% if language_code == request.LANGUAGE_CODE %}selected{% endif %}>
+              {{ language_name }}
+            </option>
+          {% endfor %}
+        </select>
+        <button type="submit">{% trans "Apply" %}</button>
+      </form>
+    </header>
+    <main>
+      {% block content %}{% endblock %}
+    </main>
+    <footer class="site-footer">
+      <span>BD-Editor</span>
+      <span>{% trans "A secure, localized rich-text editor for Django." %}</span>
+    </footer>
+  </body>
+</html>

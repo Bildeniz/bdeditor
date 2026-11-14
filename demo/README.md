@@ -20,3 +20,9 @@ Open `http://127.0.0.1:8000/admin/`, sign in, and create an article in either
 app. The upload view is mounted under `/bd-editor/` and is limited to active
 Django staff users. The demo uses SQLite and local media storage and is for
 development only. It is not a production deployment template.
+
+Open `http://127.0.0.1:8000/` to see the articles from both apps together and
+review the running `BD_EDITOR` settings. Use the language selector to switch
+the demo page and editor between English and Turkish. Configuration snippets
+show the actual global and per-app settings from `demo_project/settings.py`.
+For Turkish setup notes, see [README.tr.md](README.tr.md).
