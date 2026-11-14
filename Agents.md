@@ -39,6 +39,9 @@ public-facing overview is `README.md`.
   generated storage names rather than client-supplied paths.
 - Optional editor drafts are stored only in browser localStorage and must stay
   opt-in with a documented expiration and shared-browser privacy warning.
+- Persist the demo's development `SECRET_KEY` in its gitignored key file so
+  autoreloads preserve sessions. Production mode must require an explicit
+  `DJANGO_SECRET_KEY`.
 - Protect image uploads with CSRF, an active staff check, and add/change
   permission for the associated model.
 - Only mark sanitized output safe in the dedicated template integration.

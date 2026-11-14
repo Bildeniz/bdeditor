@@ -25,3 +25,14 @@ ve uygulama bazlı ayarlardan üretilir.
 yazı oluşturabilirsiniz. Görsel yükleme ucu `/bd-editor/` altında bulunur ve
 aktif Django personeliyle sınırlandırılmıştır. SQLite ve yerel medya depolaması
 kullanan bu demo yalnızca geliştirme içindir; üretim dağıtım şablonu değildir.
+
+Varsayılan `DJANGO_DEBUG=1` ayarında demo, `runserver` kod değişikliklerinden
+sonra yeniden başladığında oturumların geçerliliğini korumak için
+yoksayılan `demo/.secret_key` dosyasında sabit, geliştirmeye özel bir anahtar
+oluşturur. Üretimde gizli bir `DJANGO_SECRET_KEY` belirleyip `DJANGO_DEBUG=0`
+kullanın; açık bir anahtar olmadan üretim ayarları başlatılmaz.
+
+Önceki rastgele anahtarla imzalanmış mevcut oturumlar bu değişiklikten sonra
+bir kez yeniden giriş gerektirebilir. Yerel oturumların korunması için
+`demo/.secret_key` dosyasını sonraki çalıştırmalarda saklayın; silinmesi
+mevcut demo oturumlarını geçersiz kılar.

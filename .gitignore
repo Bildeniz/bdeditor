@@ -13,3 +13,4 @@ node_modules/
 frontend/dist/
 demo/db.sqlite3
 demo/media/
+demo/.secret_key

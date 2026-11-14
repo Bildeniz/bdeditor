@@ -1,11 +1,41 @@
 import os
 from pathlib import Path
 
+from django.core.exceptions import ImproperlyConfigured
 from django.core.management.utils import get_random_secret_key
 
 BASE_DIR = Path(__file__).resolve().parents[1]
-SECRET_KEY = os.environ.get("DJANGO_SECRET_KEY") or get_random_secret_key()
 DEBUG = os.environ.get("DJANGO_DEBUG", "1") == "1"
+
+
+def _get_secret_key(debug, base_dir):
+    configured_key = os.environ.get("DJANGO_SECRET_KEY")
+    if configured_key:
+        return configured_key
+    if not debug:
+        raise ImproperlyConfigured(
+            "Set DJANGO_SECRET_KEY when running the demo with DJANGO_DEBUG=0."
+        )
+
+    secret_file = base_dir / ".secret_key"
+    try:
+        # Django signs session cookies with this key. Persist the generated
+        # local-only key so autoreloads and later runs keep existing sessions.
+        with secret_file.open("x", encoding="utf-8") as key_file:
+            configured_key = get_random_secret_key()
+            key_file.write(f"{configured_key}\n")
+            return configured_key
+    except FileExistsError:
+        configured_key = secret_file.read_text(encoding="utf-8").strip()
+        if configured_key:
+            return configured_key
+        raise ImproperlyConfigured(
+            f"The development secret file {secret_file} is empty; remove it and restart."
+        ) from None
+
+
+SECRET_KEY = _get_secret_key(DEBUG, BASE_DIR)
+
 ALLOWED_HOSTS = ["127.0.0.1", "localhost"]
 ROOT_URLCONF = "demo_project.urls"
 WSGI_APPLICATION = "demo_project.wsgi.application"

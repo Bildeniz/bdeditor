@@ -9,6 +9,7 @@
 - Milestone 5: complete.
 - Milestone 6: complete.
 - Follow-up admin and demo UX changes: complete.
+- Demo autoreload session-key fix: complete.
 
 ## Completed milestones
 
@@ -26,7 +27,7 @@
 - Built and validated the universal wheel and source distribution; Twine
   metadata checks pass and the wheel contains the required static, template,
   and localization assets.
-- The 28-test suite passes on Python 3.14 with Django 6.1.3; the
+- The 32-test suite passes on Python 3.14 with Django 6.1.3; the
   earlier 20-test suite also passed on Django 5.2.19, 6.0.10, and
   6.1.3. CI is configured for the supported Python/Django combinations.
 - Added `small`, `standard`, and `full` toolbar presets with app-level
@@ -42,9 +43,17 @@
   actual global/app configuration snippets, and localized explanations.
 - Verified English/Turkish demo views, app article detail, and Turkish admin
   editor in a live browser.
+- The demo now persists its generated development secret to the ignored
+  `demo/.secret_key` file; production mode requires `DJANGO_SECRET_KEY`.
+- Added regression checks for stable development keys, empty key files, and
+  production startup without an explicit key.
 - The final source distribution includes both localized demo catalogs,
   templates, and static assets; Twine metadata checks and archive-content
   verification both pass.
+- Replaced the demo's per-process random development key with a stable
+  debug-only key and made an explicit environment key mandatory in production.
+- Added settings regression tests for reload stability and production-key
+  requirements.
 
 ## Known boundaries
 
