@@ -1,0 +1,59 @@
+msgid ""
+msgstr ""
+"Content-Type: text/plain; charset=UTF-8\n"
+"Language: tr\n"
+"Plural-Forms: nplurals=2; plural=(n > 1);\n"
+
+msgid "The image exceeds the configured upload size limit."
+msgstr "Görsel, yapılandırılmış yükleme boyutu sınırını aşıyor."
+
+msgid "The image exceeds the configured pixel limit."
+msgstr "Görsel, yapılandırılmış piksel sınırını aşıyor."
+
+msgid "This image format is not allowed."
+msgstr "Bu görsel biçimine izin verilmiyor."
+
+msgid "The image is too large to decode safely."
+msgstr "Görsel güvenli biçimde çözümlenemeyecek kadar büyük."
+
+msgid "The uploaded file is not a valid supported image."
+msgstr "Yüklenen dosya desteklenen geçerli bir görsel değil."
+
+msgid "The configured output image format is not allowed."
+msgstr "Yapılandırılmış çıktı görsel biçimine izin verilmiyor."
+
+msgid "The image could not be safely re-encoded."
+msgstr "Görsel güvenli biçimde yeniden kodlanamadı."
+
+msgid "You do not have permission to upload images."
+msgstr "Görsel yükleme izniniz yok."
+
+msgid "The requested app is not installed."
+msgstr "İstenen uygulama yüklü değil."
+
+msgid "Image uploads are disabled."
+msgstr "Görsel yüklemeleri devre dışı."
+
+msgid "An image file is required."
+msgstr "Bir görsel dosyası gerekli."
+
+msgid "The configured storage returned an unsafe URL."
+msgstr "Yapılandırılmış depolama güvenli olmayan bir URL döndürdü."
+
+msgid "Invalid request content length."
+msgstr "İstek içerik uzunluğu geçersiz."
+
+msgid "The upload request is too large."
+msgstr "Yükleme isteği çok büyük."
+
+msgid "A model label is required for image uploads."
+msgstr "Görsel yüklemek için model etiketi gereklidir."
+
+msgid "The requested model is not installed."
+msgstr "İstenen model yüklü değil."
+
+msgid "The app label does not match the model."
+msgstr "Uygulama etiketi model ile eşleşmiyor."
+
+msgid "You do not have permission to edit this model."
+msgstr "Bu modeli düzenleme izniniz yok."

@@ -1,0 +1,21 @@
+{
+  "name": "bd-editor-frontend",
+  "version": "0.1.0",
+  "private": true,
+  "license": "MIT",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "build": "esbuild src/editor.js --bundle --minify --format=iife --legal-comments=external --outfile=../bd_editor/static/bd_editor/editor.js",
+    "check": "node --check src/editor.js"
+  },
+  "dependencies": {
+    "@tiptap/core": "^3.34.0",
+    "@tiptap/extension-image": "^3.34.0",
+    "@tiptap/starter-kit": "^3.34.0"
+  },
+  "devDependencies": {
+    "esbuild": "^0.28.2"
+  }
+}
