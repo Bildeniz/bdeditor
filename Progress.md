@@ -11,14 +11,15 @@
 - Follow-up admin and demo UX changes: complete.
 - Demo autoreload session-key fix: complete.
 - Editor content-style isolation, full-width layout, and color palettes: complete.
-- Trusted PyPI publishing workflow and linked release changelog: complete;
-  PyPI/GitHub Trusted Publisher configuration remains an owner-side setup step.
+- Trusted PyPI publishing workflow and linked release changelog: complete.
+  Trusted Publisher is configured; BD-Editor 0.1.1 was published on PyPI on
+  2026-11-16.
 - Milestone 7: complete — configurable image quality bounds, local output-size
   estimates, and the optional non-blocking image alt-text warning.
 - Milestone 8: complete — editable table cell/row colors and custom zebra
   striping.
-- Release validation for 0.1.1: complete. `pyproject.toml` already reports
-  version `0.1.1`; the full test suite and distribution checks pass.
+- Release 0.1.1: published. `pyproject.toml` reports version `0.1.1`; the full
+  test suite and distribution checks passed before publication.
 - Milestone 9: complete — text alignment, image resizing, and block/inline/
   text-wrapping image layouts with global and per-app configuration.
 - Milestone 10: complete — top-aligned inline text, working float wrapping,
@@ -117,6 +118,8 @@
   the image, and zero-pixel resize-handle offsets. After the user reported the
   published page still used inline layout, only the demo image placement was
   saved as float-left; its title, text, table, and other fields were unchanged.
+- Corrected the existing `v0.1.1` tag to the release commit and published the
+  wheel and source distribution to PyPI through the Trusted Publishing workflow.
 
 ## Validation note
 

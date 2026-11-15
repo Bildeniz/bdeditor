@@ -97,9 +97,9 @@ public-facing overview is `README.md`, and release notes are kept in
 - Run tests and linting, build frontend assets, build wheel and sdist, inspect
   bundled static files, and verify package metadata.
 - Update `CHANGELOG.md` and the project version in `pyproject.toml` for each
-  release. Push a matching `v<version>` tag to run the Trusted Publishing
-  workflow; configure the PyPI trusted publisher for
-  `.github/workflows/publish.yml` and the `pypi` GitHub environment first.
+  release. Verify the PyPI trusted publisher for `.github/workflows/publish.yml`
+  and the `pypi` GitHub environment, then push a matching `v<version>` tag to
+  run the Trusted Publishing workflow.
 - Compile locale catalogs and regenerate third-party license notices after
   changing translations or frontend dependencies.
 - Retain notices for all bundled third-party assets and confirm the selected

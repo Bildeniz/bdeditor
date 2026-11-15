@@ -5,6 +5,8 @@ Notable changes to BD-Editor are documented here. Releases follow
 
 ## Unreleased
 
+## [0.1.1] - 2026-11-16
+
 ### Added
 
 - Left/center/right text alignment and image editing controls for display size,
@@ -15,6 +17,11 @@ Notable changes to BD-Editor are documented here. Releases follow
   configurable maximum width for text-wrapping float layouts.
 - Blue resize handles with bounded resizing and a live image dimension/ratio
   readout; inline image vertical alignment now defaults to the top.
+- Configurable minimum and maximum JPEG/WebP quality, with local estimates of
+  possible output sizes in the image dialog.
+- An opt-in, non-blocking reminder for images without alternative text.
+- Cell and row background colors, clearing, and customizable two-color zebra
+  striping for tables.
 
 ### Fixed
 
@@ -22,16 +29,6 @@ Notable changes to BD-Editor are documented here. Releases follow
   alignment versus paragraph wrapping in the image dialog.
 - Prevented oversized float images from consuming the full text column when
   authors choose side-by-side paragraph wrapping.
-
-## [0.1.1] - 2026-11-15
-
-### Added
-
-- Configurable minimum and maximum JPEG/WebP quality, with local estimates of
-  possible output sizes in the image dialog.
-- An opt-in, non-blocking reminder for images without alternative text.
-- Cell and row background colors, clearing, and customizable two-color zebra
-  striping for tables.
 
 ## [0.1.0] - 2026-11-14
 
