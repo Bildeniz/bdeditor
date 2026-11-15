@@ -6,7 +6,8 @@ BD-Editor is an installable Django application, distributed as `bd-editor` and
 imported as `bd_editor`. Keep runtime Python dependencies small. Browser assets
 must be bundled with the package; do not load scripts or styles from a CDN.
 Package metadata and build configuration live in `pyproject.toml`; the
-public-facing overview is `README.md`.
+public-facing overview is `README.md`, and release notes are kept in
+`CHANGELOG.md`.
 
 ## Important modules
 
@@ -80,6 +81,10 @@ public-facing overview is `README.md`.
 
 - Run tests and linting, build frontend assets, build wheel and sdist, inspect
   bundled static files, and verify package metadata.
+- Update `CHANGELOG.md` and the project version in `pyproject.toml` for each
+  release. Push a matching `v<version>` tag to run the Trusted Publishing
+  workflow; configure the PyPI trusted publisher for
+  `.github/workflows/publish.yml` and the `pypi` GitHub environment first.
 - Compile locale catalogs and regenerate third-party license notices after
   changing translations or frontend dependencies.
 - Retain notices for all bundled third-party assets and confirm the selected

@@ -11,6 +11,8 @@
 - Follow-up admin and demo UX changes: complete.
 - Demo autoreload session-key fix: complete.
 - Editor content-style isolation, full-width layout, and color palettes: complete.
+- Trusted PyPI publishing workflow and linked release changelog: complete;
+  PyPI/GitHub Trusted Publisher configuration remains an owner-side setup step.
 
 ## Completed milestones
 
@@ -59,6 +61,10 @@
 - Scoped neutral article typography to the editor surface, increased its
   width to fill its form field, and added accessible foreground/highlight color
   palettes backed by the server's CSS allowlist.
+- Added PyPI project links for documentation, issues, and the changelog.
+- Added a version-tag-triggered GitHub Actions release workflow that validates
+  the tag against `pyproject.toml`, tests and builds distributions, then uses
+  PyPI Trusted Publishing without a stored API token.
 
 ## Known boundaries
 

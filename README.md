@@ -33,6 +33,8 @@ configuration reference, localization, and security model. A two-app example
 project with localized article listings and live configuration explanations
 is in [demo/](demo/).
 
+See [CHANGELOG.md](CHANGELOG.md) for release notes.
+
 ## Security boundary
 
 The editing interface uses JavaScript, but submitted content is sanitized on
