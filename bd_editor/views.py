@@ -129,7 +129,7 @@ def upload_image(request):
                     status=400,
                 )
             quality = int(requested_quality)
-            if not 1 <= quality <= 100:
+            if not upload_config["min_quality"] <= quality <= upload_config["max_quality"]:
                 return JsonResponse(
                     {"error": _("The selected image quality is invalid.")},
                     status=400,

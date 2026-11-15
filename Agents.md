@@ -11,13 +11,19 @@ public-facing overview is `README.md`, and release notes are kept in
 
 ## Important modules
 
-- `bd_editor/conf.py` validates built-in, global, and per-app settings.
+- `bd_editor/conf.py` validates built-in, global, and per-app settings,
+  including image-quality bounds and image display/layout options.
 - `bd_editor/sanitizer.py` owns HTML cleaning and plain-text helpers.
 - `bd_editor/fields.py` applies sanitization to the Django model field.
 - `bd_editor/uploads.py` contains the optional Pillow image pipeline.
 - `bd_editor/locale/` stores editor JSON labels and Django message catalogs.
-- `frontend/src/editor.js` is the Tiptap-based browser editor source. Build its
-  local static bundle before packaging.
+- `frontend/src/editor.js` is the Tiptap-based browser editor source, including
+  table-cell styling, text alignment, bounded image resize handles, image
+  layout editing, and local image-size estimates. Inline images stay on one
+  text line; float layouts reserve `images.float_max_width_percent` of the
+  content width so adjacent text can wrap. Keep image flow and inline alignment
+  controls in the selected-image toolbar, and keep resize controls editor-scoped
+  and within configured image bounds. Build its static bundle.
 - Keep document typography and color styles scoped to the editor content
   surface, separate from Django admin styles.
 - `bd_editor/static/bd_editor/THIRD_PARTY_NOTICES.txt` includes bundled
@@ -38,6 +44,15 @@ public-facing overview is `README.md`, and release notes are kept in
   arbitrary iframe hosts or user-provided iframe permissions.
 - Restrict CSS to a safe property allowlist; never allow CSS capable of loading
   remote resources.
+- Text alignment and image layout styles must use the existing server-side CSS
+  allowlist; configured image dimensions must also be bounded by the sanitizer.
+- Table cell and row colors must be represented using the existing
+  `background-color` CSS allowlist on individual `td`/`th` cells. Image quality
+  limits (`uploads.min_quality`/`uploads.max_quality`) must be validated on
+  the server as well as reflected in the editor; browser-side size estimates
+  are local and informational only.
+- Accessibility warnings for missing image alt text must remain opt-in and
+  non-blocking.
 - Validate images by their decoded content, size, and pixel dimensions. Use
   generated storage names rather than client-supplied paths.
 - Optional editor drafts are stored only in browser localStorage and must stay

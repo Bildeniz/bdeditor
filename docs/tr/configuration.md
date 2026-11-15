@@ -37,9 +37,10 @@ BD_EDITOR = {
 
 - `small`: başlıklar, temel biçimlendirme, listeler, bağlantılar ve geri al/yinele.
 - `standard` (varsayılan): metin/arka plan rengi paletlerini, alıntı, kod,
-  tablo, video gömme ve Metin/HTML anahtarını ekler.
+  tablo, metin hizalama, seçili görsel düzenleme, video gömme ve Metin/HTML
+  anahtarını ekler.
 - `full`: `standard` profiline altı çizili biçimlendirme ve görsel yüklemeyi
-  ekler. `images` eklentisi ve `uploads.enabled = True` gerekir.
+  ekler. Yükleme için `images` eklentisi ve `uploads.enabled = True` gerekir.
 
 Profil ilgili ayar katmanı için başlangıç araç çubuğunu belirler; aynı
 katmandaki açık `toolbar` seçenekleri sonradan uygulanır. Uygulama profili
@@ -62,14 +63,25 @@ uygulamanın başlangıç profilini seçer.
 | `code_block` | `true` | Kaçışlanmış kod bloğu |
 | `link` | `true` | Güvenli bağlantı aracı |
 | `image` | `false` | Görsel yükleme; Pillow ve yüklemeler etkin olmalı |
+| `image_editing` | `true` | Seçili görselin boyut, yerleşim, alternatif metin ve başlığını düzenleme |
 | `embed` | `true` | Etkin sağlayıcılardan video gömme |
 | `table` | `true` | HTML tablosu ekleme ve düzenleme |
+| `text_align` | `true` | Paragraf ve başlıkları sola, ortaya veya sağa hizalama |
 | `source` | `true` | HTML kaynak düzenleme modu |
 | `undo` | `true` | Geri al |
 | `redo` | `true` | Yinele |
 
 Araç çubuğunun görünürlüğü yalnızca kullanıcı arayüzü tercihidir, güvenlik
 sınırı değildir. Saklanan HTML'yi sunucu tarafındaki izin listesi belirler.
+Tablo araçları etkinken hücre/satır arka plan rengi ve iki renkli zebra efekti
+kullanılabilir. Temizleyici izin listelerini değiştirirken bu renklerin
+korunması için `td`/`th` üzerindeki `style` ve `css_properties` içindeki
+`background-color` değerlerini tutun.
+Metin hizalaması için `sanitizer.css_properties` içinde `text-align` ve izinli
+paragraf/başlık etiketlerinde `style` bulunmalıdır. Görsel düzenleme etkinse
+`img` için `src`, `alt`, `title`, `style` (boyutlandırma açıksa `width` ve
+`height`) özellikleri ve seçilen yerleşimlerin güvenli CSS özellikleri de izin
+listesinde kalmalıdır.
 
 ## Tarayıcı taslakları
 
@@ -106,6 +118,14 @@ etkinleştirin.
 - `allow_quality_selection` (`true`): editörün JPEG/WEBP kalitesini seçmesine
   izin verir.
 - `quality` (`85`): varsayılan JPEG/WEBP kalitesi, 1-100 arası.
+- `min_quality` (`1`) ve `max_quality` (`100`): editör seçimlerinde izin
+  verilen JPEG/WEBP kalite aralığı; sınırlar dahildir. Varsayılan `quality`
+  bu aralıkta olmalı ve yükleme ucu sınırları ayrıca uygular.
+- `show_size_estimates` (`true`): mevcut kalite seçenekleri için tarayıcıda
+  tahmini çıktı boyutlarını gösterir. Tahminler sunucuya gönderilmez ve Pillow
+  çıktısından farklı olabilir.
+- `warn_missing_alt` (`false`): görselde alternatif metin yoksa engelleyici
+  olmayan bir hatırlatma gösterir.
 - `storage_alias` (`"default"`): Django `STORAGES` ayarındaki anahtar.
 
 Paket Django Storage API'sini kullanır. ImageKit ile uyumlu storage
@@ -115,6 +135,61 @@ Görsel penceresi seçilen görselin boyutuna ve piksel ölçülerine göre kali
 önerir. PNG kayıpsızdır ve JPEG/WEBP kalite kaydırıcısı kullanmaz.
 `allow_format_selection` veya `allow_quality_selection` değerini `false`
 yaparak seçimi sunucu yapılandırmasına sabitleyebilirsiniz.
+
+Uygulamaya özel kalite sınırları ve isteğe bağlı hatırlatma örneği:
+
+```python
+BD_EDITOR = {
+    "apps": {
+        "blog": {
+            "uploads": {
+                "quality": 82,
+                "min_quality": 60,
+                "max_quality": 92,
+                "warn_missing_alt": True,
+            },
+        },
+    },
+}
+```
+
+## Görsel düzenleme ayarları
+
+`images`, yüklenen dosyanın dönüştürülmesinden bağımsız olarak HTML'deki
+görüntü boyutunu ve yerleşim seçeneklerini belirler:
+
+- `allow_resize` (`true`): seçili görseller için genişlik/yükseklik alanlarını
+  gösterir.
+- `max_width` ve `max_height` (her biri `2048`): görüntülenen boyutların piksel
+  cinsinden üst sınırı; 1-10.000 aralığında olmalıdır. Temizleyici saklanan
+  görsel boyutlarını bu sınırlara indirger.
+- `float_max_width_percent` (`50`): metin kaydırmalı görsellerin içerik
+  alanına göre en büyük genişlik yüzdesi; 25-75 aralığında tam sayı olmalıdır.
+- `preserve_aspect_ratio` (`true`): boyut değiştirirken en-boy oranını ilk
+  durumda korur. Yazar görsel penceresinde bu seçeneği değiştirebilir.
+- `inline_vertical_alignments` (`["top", "middle", "bottom"]`): satır içi
+  görseller için `top`, `middle`, `bottom`, `baseline` değerlerinin tekrarsız
+  alt kümesi.
+- `default_inline_vertical_alignment` (`"top"`): başlangıç satır içi
+  hizalaması; `inline_vertical_alignments` içinde bulunmalıdır.
+- `allowed_layouts`: `block-left`, `block-center`, `block-right`, `inline`,
+  `float-left`, `float-right` değerlerinin tekrarsız alt kümesi.
+- `default_layout` (`"block-left"`): başlangıç yerleşimi; `allowed_layouts`
+  içinde bulunmalıdır.
+
+Blok yerleşimleri görseli ayrı satıra alır. `inline`, görseli mevcut metin
+satırına koyar; satır yetmediğinde devam eden metin görselin altından sürer.
+Paragrafın görselin yanında satır satır akması için `float-left` (metin sağda)
+veya `float-right` (metin solda) seçin. Bu yerleşimler görseli varsayılan
+olarak içerik genişliğinin yüzde 50'siyle sınırlar; `float_max_width_percent`
+bu sınırı değiştirir. Görsel seçiliyken akış ve satır içi hizalama araç
+çubuğundan değiştirilebilir. `inline_vertical_alignments`, satır içi yerleşimde
+yan metnin görsele göre üst/orta/alt konumunu seçtirir.
+Boyut ayarı yüklenen dosyanın piksel verisini değil, HTML'de görüntülenme
+boyutunu değiştirir. Bu ayarlar diğer `BD_EDITOR` seçenekleri gibi global ve
+uygulama bazında birleştirilir. Seçili görsellerde sekiz sürükleme tutamacı ve
+canlı boyut/oran bilgisi görünür. Float yerleşimlerde metin görselin üstünden
+başlar.
 
 ## Video sağlayıcıları
 

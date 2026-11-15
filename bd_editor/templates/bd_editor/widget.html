@@ -3,8 +3,39 @@
   <div class="bd-editor-header">
     <div class="bd-editor-toolbar" role="toolbar">
       <div class="bd-editor-toolbar-row" data-bd-toolbar-primary></div>
+      <div class="bd-editor-toolbar-row bd-editor-image-context-row" data-bd-image-context-tools role="group" hidden>
+        <label class="bd-editor-image-context-control">
+          <span data-bd-image-layout-toolbar-label></span>
+          <select class="bd-editor-format-select" data-bd-image-layout-toolbar></select>
+        </label>
+        <label class="bd-editor-image-context-control" data-bd-image-inline-alignment-toolbar-field hidden>
+          <span data-bd-image-inline-alignment-toolbar-label></span>
+          <select class="bd-editor-format-select" data-bd-image-inline-alignment-toolbar></select>
+        </label>
+      </div>
       <div class="bd-editor-toolbar-row" data-bd-toolbar-format></div>
-      <div class="bd-editor-toolbar-row bd-editor-table-tools" data-bd-toolbar-table hidden></div>
+      <div class="bd-editor-toolbar-row bd-editor-table-tools" data-bd-toolbar-table hidden>
+        <div class="bd-editor-table-style-controls" data-bd-table-style-controls>
+          <label>
+            <span data-bd-table-style-scope-label></span>
+            <select data-bd-table-style-scope>
+              <option value="cell"></option>
+              <option value="row"></option>
+              <option value="zebra"></option>
+            </select>
+          </label>
+          <label>
+            <span data-bd-table-style-primary-label></span>
+            <input type="color" value="#fef08a" data-bd-table-style-primary>
+          </label>
+          <label data-bd-table-style-secondary-field hidden>
+            <span data-bd-table-style-secondary-label></span>
+            <input type="color" value="#e2e8f0" data-bd-table-style-secondary>
+          </label>
+          <button type="button" class="bd-editor-table-style-button" data-bd-table-style-apply></button>
+          <button type="button" class="bd-editor-table-style-button" data-bd-table-style-clear></button>
+        </div>
+      </div>
     </div>
     <div class="bd-editor-mode-switch" role="group">
       <button type="button" class="bd-editor-mode-button" data-bd-mode="text"></button>
@@ -24,24 +55,57 @@
         <h2 data-bd-image-title></h2>
         <button type="button" class="bd-editor-dialog-close" data-bd-image-close></button>
       </header>
-      <p class="bd-editor-image-details" data-bd-image-details></p>
-      <label class="bd-editor-dialog-field" data-bd-image-format-label>
-        <span data-bd-image-format-text></span>
-        <select data-bd-image-format></select>
-      </label>
-      <div class="bd-editor-dialog-field" data-bd-image-quality-group>
-        <label>
-          <span data-bd-image-quality-label></span>
-          <select data-bd-image-quality-preset></select>
+      <div data-bd-image-upload-options>
+        <p class="bd-editor-image-details" data-bd-image-details></p>
+        <label class="bd-editor-dialog-field" data-bd-image-format-label>
+          <span data-bd-image-format-text></span>
+          <select data-bd-image-format></select>
         </label>
-        <input type="range" min="1" max="100" step="1" data-bd-image-quality>
-        <output data-bd-image-quality-output></output>
-        <p class="bd-editor-dialog-hint" data-bd-image-quality-hint></p>
+        <div class="bd-editor-dialog-field" data-bd-image-quality-group>
+          <label>
+            <span data-bd-image-quality-label></span>
+            <select data-bd-image-quality-preset></select>
+          </label>
+          <input type="range" min="1" max="100" step="1" data-bd-image-quality>
+          <output data-bd-image-quality-output></output>
+          <p class="bd-editor-dialog-hint" data-bd-image-quality-hint></p>
+        </div>
       </div>
+      <p class="bd-editor-dialog-hint bd-editor-image-estimates" data-bd-image-estimates aria-live="polite" hidden></p>
+      <div class="bd-editor-image-size-fields" data-bd-image-size-fields>
+        <label class="bd-editor-dialog-field">
+          <span data-bd-image-width-label></span>
+          <input type="number" min="1" step="1" data-bd-image-width>
+        </label>
+        <label class="bd-editor-dialog-field">
+          <span data-bd-image-height-label></span>
+          <input type="number" min="1" step="1" data-bd-image-height>
+        </label>
+      </div>
+      <output class="bd-editor-dialog-hint bd-editor-image-dimensions-summary" data-bd-image-dimensions-summary aria-live="polite"></output>
+      <label class="bd-editor-image-ratio-option" data-bd-image-ratio-field>
+        <input type="checkbox" data-bd-image-ratio>
+        <span data-bd-image-ratio-label></span>
+      </label>
+      <label class="bd-editor-dialog-field">
+        <span data-bd-image-layout-label></span>
+        <select data-bd-image-layout></select>
+      </label>
+      <p class="bd-editor-dialog-hint" data-bd-image-layout-hint></p>
+      <label class="bd-editor-dialog-field" data-bd-image-inline-alignment-field hidden>
+        <span data-bd-image-inline-alignment-label></span>
+        <select data-bd-image-inline-alignment></select>
+      </label>
+      <p class="bd-editor-dialog-hint" data-bd-image-inline-alignment-hint hidden></p>
       <label class="bd-editor-dialog-field">
         <span data-bd-image-alt-text></span>
         <input type="text" data-bd-image-alt maxlength="500">
         <span class="bd-editor-dialog-hint" data-bd-image-alt-hint></span>
+        <span class="bd-editor-dialog-hint" data-bd-image-alt-warning role="status" hidden></span>
+      </label>
+      <label class="bd-editor-dialog-field">
+        <span data-bd-image-title-label></span>
+        <input type="text" data-bd-image-title-value maxlength="500">
       </label>
       <p class="bd-editor-dialog-error" data-bd-image-error aria-live="polite"></p>
       <footer class="bd-editor-dialog-actions">

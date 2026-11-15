@@ -31,7 +31,25 @@ Global veya app bazında `toolbar_preset` için `small`, `standard` veya `full`
 seçin. Ardından boolean `toolbar` ayarlarıyla düğmeleri özelleştirin.
 `standard` ve `full` profillerinde tablo ekleme bulunur. İmleç tablodayken
 bağlamsal araçlarla satır/sütun ekleyip silebilir, başlık satırını
-değiştirebilir veya tabloyu silebilirsiniz.
+değiştirebilir veya tabloyu silebilirsiniz. Aynı araç çubuğundan geçerli
+hücreye ya da satıra özel arka plan rengi uygulayabilir, rengi temizleyebilir
+ve iki renkle dönüşümlü satır (zebra) efekti verebilirsiniz. Renkler hücre
+düzeyindeki `background-color` stilleri olarak saklanır ve temizleyici izin
+listesine tabidir.
+
+## Metin hizalama ve görsel düzenleme
+
+`text_align` araç çubuğu seçeneği geçerli paragrafı veya başlığı sola/ortaya/
+sağa hizalar. `image_editing` etkinse görsel seçildiğinde görüntülenen boyutu,
+alternatif metni, başlığı ve yerleşimi değiştiren bir pencere açılır. Görsel
+ayrı satırda sola/ortaya/sağa alınabilir, metin içine konabilir veya sola/sağa
+kaydırılarak yakınındaki metnin etrafında akması sağlanabilir. Boyut ayarı
+dosyayı yeniden ölçeklemez veya kodlamaz; yalnızca HTML görüntüleme
+boyutlarını değiştirir. Temizleyici genişlik/yüksekliği sınırlar ve görsel
+stillerini CSS izin listesine göre temizler. Seçili görsel etrafında sürükleme
+tutamakları ve canlı boyut/oran bilgisi gösterilir. Satır içi görsellerin
+dikey hizalaması üst/orta/alt olarak ayrıca seçilebilir; float yerleşimlerde
+metin görselin üstünden başlar.
 
 ## Temizleme yardımcıları
 

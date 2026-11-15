@@ -121,7 +121,12 @@ startup.
 ```python
 BD_EDITOR = {
     "defaults": {
-        "toolbar": {"image": True, "embed": True},
+        "toolbar": {
+            "image": True,
+            "image_editing": True,
+            "text_align": True,
+            "embed": True,
+        },
         "uploads": {
             "enabled": True,
             "max_file_size": 5 * 1024 * 1024,
@@ -134,6 +139,22 @@ BD_EDITOR = {
             "storage_alias": "default",
         },
         "embeds": {"providers": ["youtube", "vimeo"]},
+        "images": {
+            "max_width": 1600,
+            "max_height": 1200,
+            "preserve_aspect_ratio": True,
+            "allowed_layouts": [
+                "block-left",
+                "block-center",
+                "block-right",
+                "inline",
+                "float-left",
+                "float-right",
+            ],
+            "default_layout": "block-left",
+            "inline_vertical_alignments": ["top", "middle", "bottom"],
+            "default_inline_vertical_alignment": "top",
+        },
     },
 }
 ```
@@ -146,7 +167,12 @@ selected Django storage alias. The `output_format` can be `keep`, `JPEG`,
 never accepted. The editor's embed button accepts only URLs for enabled
 providers. The image dialog lets authors choose an allowed output format, a
 quality preset based on the image's dimensions and file size, and alternative
-text. PNG stays lossless.
+text. PNG stays lossless. The standard toolbar also aligns text and lets
+authors select an existing image to change its displayed dimensions,
+placement, alternative text, or title. Images may be inline or float left/right
+to let nearby text wrap around them. Selected images show draggable blue
+handles and a live dimensions/aspect-ratio readout; inline images can align to
+the top, middle, or bottom of a text line.
 
 The standard toolbar also supports HTML tables. Insert a table with a header
 row, then use its contextual controls to add or remove rows and columns.

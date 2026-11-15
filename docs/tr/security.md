@@ -54,6 +54,12 @@ olmayan dosyalar reddedilir.
 medyalarını mümkünse ayrı bir origin'den sunun, reverse proxy üzerinde istek
 boyutu sınırı koyun ve storage erişim yetkilerini ayrıca düzenleyin.
 
+Editördeki boyut kontrolleri kaydedilen piksel verisini değil, HTML'de
+görüntüleme boyutlarını değiştirir. `images.max_width` ve `images.max_height`
+bu boyutları sunucu tarafında sınırlar. Hizalama ve metin kaydırma yalnızca
+sunucu allowlist'indeki CSS özelliklerini kullanır; araç çubuğu güvenlik
+sınırı değildir.
+
 ## Tarayıcı taslakları
 
 Taslak kaydı varsayılan olarak kapalıdır. Etkinleştirildiğinde içerik

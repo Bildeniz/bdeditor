@@ -1,6 +1,6 @@
-import { Editor, Node, getMarkRange } from "@tiptap/core";
+import { Editor, Extension, Node, getMarkRange } from "@tiptap/core";
 import Image from "@tiptap/extension-image";
-import { TableKit } from "@tiptap/extension-table";
+import { TableCell, TableHeader, TableKit } from "@tiptap/extension-table";
 import StarterKit from "@tiptap/starter-kit";
 import Color from "@tiptap/extension-color";
 import { BackgroundColor, TextStyle } from "@tiptap/extension-text-style";
@@ -16,6 +16,7 @@ import TextColorIcon from "@tabler/icons/outline/color-swatch.svg";
 import BackgroundColorIcon from "@tabler/icons/outline/highlight.svg";
 import LinkIcon from "@tabler/icons/outline/link.svg";
 import ImageIcon from "@tabler/icons/outline/photo.svg";
+import ImageEditIcon from "@tabler/icons/outline/photo-edit.svg";
 import EmbedIcon from "@tabler/icons/outline/player-play.svg";
 import TableIcon from "@tabler/icons/outline/table.svg";
 import UndoIcon from "@tabler/icons/outline/arrow-back-up.svg";
@@ -55,6 +56,322 @@ const BACKGROUND_COLOR_PALETTE = [
   { key: "backgroundPurple", value: "#ddd6fe" },
   { key: "backgroundGray", value: "#e2e8f0" },
 ];
+
+const TEXT_ALIGNMENTS = new Set(["left", "center", "right", "justify", "start", "end"]);
+const IMAGE_LAYOUT_STYLES = {
+  "block-left":
+    "display:block;float:none;clear:both;margin-left:0;margin-right:auto;margin-bottom:0.5rem",
+  "block-center":
+    "display:block;float:none;clear:both;margin-left:auto;margin-right:auto;margin-bottom:0.5rem",
+  "block-right":
+    "display:block;float:none;clear:both;margin-left:auto;margin-right:0;margin-bottom:0.5rem",
+  inline: "display:inline;float:none;clear:none;vertical-align:top;margin-left:0.25em;margin-right:0.25em",
+  "float-left": "display:block;float:left;clear:none;margin-right:1em;margin-bottom:0.5rem",
+  "float-right": "display:block;float:right;clear:none;margin-left:1em;margin-bottom:0.5rem",
+};
+
+const IMAGE_LAYOUT_MESSAGES = {
+  "block-left": "imageLayoutBlockLeft",
+  "block-center": "imageLayoutBlockCenter",
+  "block-right": "imageLayoutBlockRight",
+  inline: "imageLayoutInline",
+  "float-left": "imageLayoutFloatLeft",
+  "float-right": "imageLayoutFloatRight",
+};
+
+const INLINE_VERTICAL_ALIGNMENT_MESSAGES = {
+  top: "imageVerticalAlignTop",
+  middle: "imageVerticalAlignMiddle",
+  bottom: "imageVerticalAlignBottom",
+  baseline: "imageVerticalAlignBaseline",
+};
+
+function isFloatImageLayout(layout) {
+  return layout === "float-left" || layout === "float-right";
+}
+
+function imageDimensionsSummary(width, height, messages) {
+  if (!Number.isFinite(width) || !Number.isFinite(height) || width < 1 || height < 1) {
+    return messages.unknownImageSize;
+  }
+  return messages.imageDimensionsSummary
+    .replace("{width}", String(Math.round(width)))
+    .replace("{height}", String(Math.round(height)))
+    .replace("{ratio}", (width / height).toFixed(2));
+}
+
+function imageLayoutStyle(layout, verticalAlignment, preserveAspectRatio, imageConfig) {
+  let style = IMAGE_LAYOUT_STYLES[layout] || IMAGE_LAYOUT_STYLES[imageConfig.default_layout];
+  if (layout === "inline") {
+    style = style.replace(
+      "vertical-align:top",
+      `vertical-align:${verticalAlignment || imageConfig.default_inline_vertical_alignment}`,
+    );
+  }
+  const maxWidth = isFloatImageLayout(layout)
+    ? `${imageConfig.float_max_width_percent}%`
+    : "100%";
+  style += `;max-width:${maxWidth};max-height:${imageConfig.max_height}px`;
+  if (preserveAspectRatio) style += ";height:auto";
+  return style;
+}
+
+const TextAlignment = Extension.create({
+  name: "bdTextAlignment",
+
+  addGlobalAttributes() {
+    return [
+      {
+        types: ["paragraph", "heading"],
+        attributes: {
+          textAlign: {
+            default: null,
+            parseHTML: (element) => {
+              const value = element.style.textAlign.toLowerCase();
+              return TEXT_ALIGNMENTS.has(value) ? value : null;
+            },
+            renderHTML: ({ textAlign }) =>
+              TEXT_ALIGNMENTS.has(textAlign) ? { style: `text-align:${textAlign}` } : {},
+          },
+        },
+      },
+    ];
+  },
+});
+
+function parseImageLayout(element) {
+  const { display, float, marginLeft, marginRight } = element.style;
+  if (float === "left" || float === "right") return `float-${float}`;
+  if (display === "inline" || display === "inline-block") return "inline";
+  if (marginLeft === "auto" && marginRight === "auto") return "block-center";
+  if (marginLeft === "auto") return "block-right";
+  return "block-left";
+}
+
+function createSafeImageExtension(imageConfig, messages) {
+  return Image.extend({
+    addOptions() {
+      return {
+        ...this.parent?.(),
+        inline: true,
+        allowBase64: false,
+        resize: imageConfig.allow_resize
+          ? {
+              enabled: true,
+              directions: [
+                "top-left",
+                "top",
+                "top-right",
+                "right",
+                "bottom-right",
+                "bottom",
+                "bottom-left",
+                "left",
+              ],
+              minWidth: 1,
+              minHeight: 1,
+              alwaysPreserveAspectRatio: imageConfig.preserve_aspect_ratio,
+            }
+          : false,
+      };
+    },
+
+    addAttributes() {
+      const parentAttributes = this.parent?.() || {};
+      return {
+        ...parentAttributes,
+        src: {
+          ...parentAttributes.src,
+          parseHTML: (element) => {
+            const value = element.getAttribute("src");
+            return isSafeImageUrl(value) ? value : null;
+          },
+        },
+        layout: {
+          default: imageConfig.default_layout,
+          parseHTML: (element) => {
+            const layout = parseImageLayout(element);
+            return imageConfig.allowed_layouts.includes(layout)
+              ? layout
+              : imageConfig.default_layout;
+          },
+          renderHTML: ({ layout, inlineVerticalAlignment, preserveAspectRatio }) => ({
+            style: imageLayoutStyle(
+              layout,
+              inlineVerticalAlignment,
+              preserveAspectRatio,
+              imageConfig,
+            ),
+          }),
+        },
+        inlineVerticalAlignment: {
+          default: imageConfig.default_inline_vertical_alignment,
+          parseHTML: (element) => {
+            const alignment = element.style.verticalAlign;
+            return imageConfig.inline_vertical_alignments.includes(alignment)
+              ? alignment
+              : imageConfig.default_inline_vertical_alignment;
+          },
+          renderHTML: () => ({}),
+        },
+        preserveAspectRatio: {
+          default: imageConfig.preserve_aspect_ratio,
+          parseHTML: (element) => {
+            if (element.style.height === "auto") return true;
+            if (element.style.height) return false;
+            return imageConfig.preserve_aspect_ratio;
+          },
+          renderHTML: () => ({}),
+        },
+      };
+    },
+
+    addNodeView() {
+      const createParentNodeView = this.parent?.();
+      if (!createParentNodeView) return null;
+      return (props) => {
+        const nodeView = createParentNodeView(props);
+        if (!nodeView) return null;
+
+        const container = nodeView.dom;
+        const image = container.querySelector("img");
+        const dimensionsInfo = document.createElement("output");
+        dimensionsInfo.className = "bd-editor-image-resize-info";
+        dimensionsInfo.dataset.bdImageResizeInfo = "";
+        dimensionsInfo.setAttribute("aria-hidden", "true");
+        container.append(dimensionsInfo);
+        nodeView.minSize = { width: 1, height: 1 };
+        nodeView.maxSize = {
+          width: imageConfig.max_width,
+          height: imageConfig.max_height,
+        };
+        let observedParent = null;
+        let resizeObserver = null;
+
+        function updateDimensionsInfo(width, height) {
+          dimensionsInfo.textContent = imageDimensionsSummary(width, height, messages);
+        }
+
+        function updateRenderedDimensionsInfo(node) {
+          const rect = image?.getBoundingClientRect();
+          updateDimensionsInfo(
+            rect?.width || Number(node.attrs.width) || image?.naturalWidth,
+            rect?.height || Number(node.attrs.height) || image?.naturalHeight,
+          );
+        }
+
+        function updateResizeBounds(node) {
+          const layout = node.attrs.layout || imageConfig.default_layout;
+          const contentWidth = container.parentElement?.clientWidth || 0;
+          const maxWidth = isFloatImageLayout(layout) && contentWidth
+            ? Math.min(
+                imageConfig.max_width,
+                Math.floor((contentWidth * imageConfig.float_max_width_percent) / 100),
+              )
+            : imageConfig.max_width;
+          nodeView.maxSize = {
+            width: Math.max(1, maxWidth),
+            height: imageConfig.max_height,
+          };
+
+          const parent = container.parentElement;
+          if (resizeObserver && parent && parent !== observedParent) {
+            resizeObserver.disconnect();
+            resizeObserver.observe(parent);
+            observedParent = parent;
+          }
+        }
+
+        if (typeof ResizeObserver !== "undefined") {
+          resizeObserver = new ResizeObserver(() => {
+            if (!container.isConnected) return;
+            updateResizeBounds(nodeView.node);
+            updateRenderedDimensionsInfo(nodeView.node);
+          });
+        }
+
+        function applyLayout(node) {
+          const layout = node.attrs.layout || imageConfig.default_layout;
+          const isFloatingLayout = isFloatImageLayout(layout);
+          const verticalAlignment =
+            node.attrs.inlineVerticalAlignment || imageConfig.default_inline_vertical_alignment;
+          const style = document.createElement("span").style;
+          style.cssText = imageLayoutStyle(
+            layout,
+            verticalAlignment,
+            node.attrs.preserveAspectRatio !== false,
+            imageConfig,
+          );
+          container.style.position = "relative";
+          container.style.display = layout === "inline" ? "inline-flex" : "block";
+          container.style.width = "fit-content";
+          container.style.maxWidth = isFloatingLayout
+            ? `${imageConfig.float_max_width_percent}%`
+            : "100%";
+          container.style.maxHeight = `${imageConfig.max_height}px`;
+          container.style.cssFloat = style.cssFloat;
+          container.style.clear = style.clear;
+          container.style.marginLeft = style.marginLeft;
+          container.style.marginRight = style.marginRight;
+          container.style.marginBottom = style.marginBottom;
+          container.style.verticalAlign = style.verticalAlign;
+
+          if (image) {
+            image.style.display = "block";
+            image.style.cssFloat = "none";
+            image.style.clear = "none";
+            image.style.margin = "0";
+            image.style.verticalAlign = "baseline";
+            image.style.maxWidth = "100%";
+            image.style.maxHeight = `${imageConfig.max_height}px`;
+            image.style.width = Number(node.attrs.width)
+              ? `${Number(node.attrs.width)}px`
+              : "";
+            image.style.height = node.attrs.preserveAspectRatio !== false
+              ? "auto"
+              : Number(node.attrs.height)
+                ? `${Number(node.attrs.height)}px`
+                : "";
+          }
+          nodeView.preserveAspectRatio =
+            node.attrs.preserveAspectRatio ?? imageConfig.preserve_aspect_ratio;
+          updateResizeBounds(node);
+          updateRenderedDimensionsInfo(node);
+          requestAnimationFrame(() => {
+            if (!container.isConnected) return;
+            updateResizeBounds(nodeView.node);
+            updateRenderedDimensionsInfo(nodeView.node);
+          });
+        }
+
+        const onResize = nodeView.onResize?.bind(nodeView);
+        nodeView.onResize = (width, height) => {
+          onResize?.(width, height);
+          updateDimensionsInfo(width, height);
+        };
+        const onCommit = nodeView.onCommit.bind(nodeView);
+        nodeView.onCommit = (width, height) => {
+          const position = props.getPos();
+          onCommit(width, height);
+          if (position !== undefined) props.editor.commands.setNodeSelection(position);
+        };
+        const updateNodeView = nodeView.update.bind(nodeView);
+        nodeView.update = (node, ...args) => {
+          const updated = updateNodeView(node, ...args);
+          if (updated) applyLayout(node);
+          return updated;
+        };
+        const destroyNodeView = nodeView.destroy.bind(nodeView);
+        nodeView.destroy = () => {
+          resizeObserver?.disconnect();
+          destroyNodeView();
+        };
+        applyLayout(props.node);
+        return nodeView;
+      };
+    },
+  });
+}
 
 function canonicalEmbedUrl(rawUrl, providers) {
   if (typeof rawUrl !== "string" || rawUrl.length > 2048) return null;
@@ -186,21 +503,24 @@ function isSafeImageUrl(value) {
   }
 }
 
-const SafeImage = Image.extend({
-  addAttributes() {
-    const parentAttributes = this.parent?.() || {};
-    return {
-      ...parentAttributes,
-      src: {
-        ...parentAttributes.src,
-        parseHTML: (element) => {
-          const value = element.getAttribute("src");
-          return isSafeImageUrl(value) ? value : null;
+function addTableBackgroundAttribute(extension) {
+  return extension.extend({
+    addAttributes() {
+      return {
+        ...this.parent?.(),
+        backgroundColor: {
+          default: null,
+          parseHTML: (element) => element.style.backgroundColor || null,
+          renderHTML: ({ backgroundColor }) =>
+            backgroundColor ? { style: `background-color: ${backgroundColor}` } : {},
         },
-      },
-    };
-  },
-});
+      };
+    },
+  });
+}
+
+const StyledTableCell = addTableBackgroundAttribute(TableCell);
+const StyledTableHeader = addTableBackgroundAttribute(TableHeader);
 
 function createIcon(source) {
   const svgDocument = new DOMParser().parseFromString(source, "image/svg+xml");
@@ -234,6 +554,43 @@ async function readImageDimensions(file) {
     });
   } finally {
     URL.revokeObjectURL(objectUrl);
+  }
+}
+
+async function estimateImageSizes(file, format, qualities) {
+  if (typeof createImageBitmap !== "function") {
+    throw new Error("Image size estimation requires createImageBitmap.");
+  }
+
+  const bitmap = await createImageBitmap(file);
+  const canvas = document.createElement("canvas");
+  canvas.width = bitmap.width;
+  canvas.height = bitmap.height;
+  try {
+    const context = canvas.getContext("2d");
+    if (!context) throw new Error("A 2D canvas context is unavailable.");
+    if (format === "JPEG") {
+      context.fillStyle = "#fff";
+      context.fillRect(0, 0, canvas.width, canvas.height);
+    }
+    context.drawImage(bitmap, 0, 0);
+
+    const mimeType = `image/${format === "JPEG" ? "jpeg" : format.toLowerCase()}`;
+    const sizes = [];
+    for (const quality of qualities) {
+      const blob = await new Promise((resolve) => {
+        canvas.toBlob(resolve, mimeType, format === "PNG" ? undefined : quality / 100);
+      });
+      if (!blob || blob.type !== mimeType) {
+        throw new Error(`The browser could not estimate ${format} output size.`);
+      }
+      sizes.push(blob.size);
+    }
+    return sizes;
+  } finally {
+    bitmap.close();
+    canvas.width = 0;
+    canvas.height = 0;
   }
 }
 
@@ -353,6 +710,7 @@ function initializeEditor(source) {
   const toolbar = root.querySelector(".bd-editor-toolbar");
   const rows = {
     primary: root.querySelector("[data-bd-toolbar-primary]"),
+    imageContext: root.querySelector("[data-bd-image-context-tools]"),
     format: root.querySelector("[data-bd-toolbar-format]"),
     table: root.querySelector("[data-bd-toolbar-table]"),
   };
@@ -364,6 +722,17 @@ function initializeEditor(source) {
   const modeSwitch = root.querySelector(".bd-editor-mode-switch");
   const textModeButton = root.querySelector('[data-bd-mode="text"]');
   const sourceModeButton = root.querySelector('[data-bd-mode="source"]');
+  const imageLayoutToolbarLabel = root.querySelector("[data-bd-image-layout-toolbar-label]");
+  const imageLayoutToolbar = root.querySelector("[data-bd-image-layout-toolbar]");
+  const inlineAlignmentToolbarField = root.querySelector(
+    "[data-bd-image-inline-alignment-toolbar-field]",
+  );
+  const inlineAlignmentToolbarLabel = root.querySelector(
+    "[data-bd-image-inline-alignment-toolbar-label]",
+  );
+  const inlineAlignmentToolbar = root.querySelector(
+    "[data-bd-image-inline-alignment-toolbar]",
+  );
   const toolbarConfig = config.toolbar || {};
   const form = source.closest("form");
   const instanceId = `${source.id || "bd-editor"}-${++editorInstanceCount}`;
@@ -377,18 +746,37 @@ function initializeEditor(source) {
   const restoredDraft = draftStore?.restore();
   let sourceMode = Boolean(restoredDraft?.sourceMode);
   let editor = null;
+  let selectedImageResizeContainer = null;
+  let selectedImagePosition = null;
   let draftTimer = null;
   const buttonRefs = new Map();
   const tableActions = new Map();
   const colorMenus = new Map();
 
   toolbar.setAttribute("aria-label", messages.toolbar);
+  rows.imageContext.setAttribute("aria-label", messages.imageContextToolbar);
   rows.table.setAttribute("aria-label", messages.tableTools);
   modeSwitch.setAttribute("aria-label", messages.modeSwitch);
   modeSwitch.hidden = !toolbarConfig.source;
   textModeButton.textContent = messages.modeText;
   sourceModeButton.textContent = messages.modeSource;
   sourceLabel.textContent = messages.sourceLabel;
+  imageLayoutToolbarLabel.textContent = messages.imageLayoutToolbar;
+  imageLayoutToolbar.setAttribute("aria-label", messages.imageLayout);
+  for (const layout of config.images.allowed_layouts) {
+    const option = document.createElement("option");
+    option.value = layout;
+    option.textContent = messages[IMAGE_LAYOUT_MESSAGES[layout]];
+    imageLayoutToolbar.append(option);
+  }
+  inlineAlignmentToolbarLabel.textContent = messages.imageInlineAlignmentToolbar;
+  inlineAlignmentToolbar.setAttribute("aria-label", messages.imageInlineAlignment);
+  for (const alignment of config.images.inline_vertical_alignments) {
+    const option = document.createElement("option");
+    option.value = alignment;
+    option.textContent = messages[INLINE_VERTICAL_ALIGNMENT_MESSAGES[alignment]];
+    inlineAlignmentToolbar.append(option);
+  }
   canvas.id = `${instanceId}-visual`;
   sourceView.id = `${instanceId}-source`;
   sourceLabel.htmlFor = sourceView.id;
@@ -496,8 +884,15 @@ function initializeEditor(source) {
       TextStyle,
       Color,
       BackgroundColor,
-      SafeImage.configure({ allowBase64: false }),
-      TableKit.configure({ table: { resizable: true } }),
+      TextAlignment,
+      createSafeImageExtension(config.images, messages),
+      TableKit.configure({
+        table: { resizable: true },
+        tableCell: false,
+        tableHeader: false,
+      }),
+      StyledTableCell,
+      StyledTableHeader,
       createVideoEmbedExtension(config.embeds?.providers || []),
     ],
     content: editorContent,
@@ -602,6 +997,63 @@ function initializeEditor(source) {
       headingSelect.disabled = sourceMode;
     }
 
+    const textAlignSelect = buttonRefs.get("text_align");
+    if (textAlignSelect) {
+      const currentBlock = editor.isActive("heading") ? "heading" : "paragraph";
+      textAlignSelect.value = editor.getAttributes(currentBlock).textAlign || "";
+      textAlignSelect.disabled =
+        sourceMode || (!editor.isActive("paragraph") && !editor.isActive("heading"));
+    }
+
+    const selection = editor.state.selection;
+    const imageNodeSelected = selection.node?.type.name === "image";
+    if (imageNodeSelected) selectedImagePosition = selection.from;
+    else if (!rows.imageContext.contains(document.activeElement)) selectedImagePosition = null;
+    const rememberedImageNode =
+      selectedImagePosition === null ? null : editor.state.doc.nodeAt(selectedImagePosition);
+    const selectedImageNode = imageNodeSelected
+      ? selection.node
+      : rows.imageContext.contains(document.activeElement) &&
+          rememberedImageNode?.type.name === "image"
+        ? rememberedImageNode
+        : null;
+    const selectedImageNodePosition = imageNodeSelected
+      ? selection.from
+      : selectedImageNode
+        ? selectedImagePosition
+        : null;
+    const selectedImageLayout =
+      selectedImageNode?.attrs.layout || config.images.default_layout;
+    const showImageContext = Boolean(
+      selectedImageNode && !sourceMode && toolbarConfig.image_editing,
+    );
+    const imageEditButton = buttonRefs.get("image_editing");
+    if (imageEditButton) {
+      imageEditButton.disabled = sourceMode || !selectedImageNode;
+      imageEditButton.setAttribute("aria-pressed", String(Boolean(selectedImageNode)));
+    }
+    rows.imageContext.hidden = !showImageContext;
+    imageLayoutToolbar.value = config.images.allowed_layouts.includes(selectedImageLayout)
+      ? selectedImageLayout
+      : config.images.default_layout;
+    inlineAlignmentToolbarField.hidden =
+      !showImageContext || selectedImageLayout !== "inline";
+    inlineAlignmentToolbar.value = config.images.inline_vertical_alignments.includes(
+      selectedImageNode?.attrs.inlineVerticalAlignment,
+    )
+      ? selectedImageNode.attrs.inlineVerticalAlignment
+      : config.images.default_inline_vertical_alignment;
+
+    selectedImageResizeContainer?.classList.remove("bd-editor-image-selected");
+    selectedImageResizeContainer = null;
+    if (selectedImageNodePosition !== null) {
+      const selectedNode = editor.view.nodeDOM(selectedImageNodePosition);
+      if (selectedNode instanceof HTMLElement) {
+        selectedNode.classList.add("bd-editor-image-selected");
+        selectedImageResizeContainer = selectedNode;
+      }
+    }
+
     const inTable = editor.isActive("table");
     rows.table.hidden = sourceMode || !toolbarConfig.table || !inTable;
     for (const [name, command] of tableActions) {
@@ -687,6 +1139,205 @@ function initializeEditor(source) {
     }
   });
 
+  function fitImageDimensions(width, height) {
+    if (!Number.isFinite(width) || !Number.isFinite(height) || width < 1 || height < 1) {
+      return { width: null, height: null };
+    }
+    const imageConfig = config.images;
+    const scale = Math.min(
+      1,
+      imageConfig.max_width / width,
+      imageConfig.max_height / height,
+    );
+    return {
+      width: Math.max(1, Math.floor(width * scale)),
+      height: Math.max(1, Math.floor(height * scale)),
+    };
+  }
+
+  function getImageWidthLimit(layout, nodeView = null) {
+    const imageConfig = config.images;
+    if (!isFloatImageLayout(layout)) return imageConfig.max_width;
+
+    const contentWidth =
+      nodeView?.parentElement?.clientWidth ||
+      editor?.view?.dom?.clientWidth ||
+      0;
+    if (!contentWidth) return imageConfig.max_width;
+    return Math.max(
+      1,
+      Math.min(
+        imageConfig.max_width,
+        Math.floor((contentWidth * imageConfig.float_max_width_percent) / 100),
+      ),
+    );
+  }
+
+  function fitImageDimensionsForLayout(width, height, layout, nodeView = null) {
+    const dimensions = fitImageDimensions(width, height);
+    if (!dimensions.width || !dimensions.height) return dimensions;
+
+    const maxWidth = getImageWidthLimit(layout, nodeView);
+    if (dimensions.width <= maxWidth) return dimensions;
+    const scale = maxWidth / dimensions.width;
+    return {
+      width: maxWidth,
+      height: Math.max(1, Math.round(dimensions.height * scale)),
+    };
+  }
+
+  function setupImagePropertyFields(
+    dialog,
+    {
+      width,
+      height,
+      layout,
+      inlineVerticalAlignment,
+      preserveAspectRatio,
+      alt = "",
+      title = "",
+      nodeView = null,
+    },
+  ) {
+    const imageConfig = config.images;
+    const qualityConfig = config.uploads;
+    const widthField = dialog.querySelector("[data-bd-image-width]");
+    const heightField = dialog.querySelector("[data-bd-image-height]");
+    const ratioCheckbox = dialog.querySelector("[data-bd-image-ratio]");
+    const layoutSelect = dialog.querySelector("[data-bd-image-layout]");
+    const inlineAlignmentField = dialog.querySelector("[data-bd-image-inline-alignment-field]");
+    const inlineAlignmentLabel = dialog.querySelector("[data-bd-image-inline-alignment-label]");
+    const inlineAlignmentSelect = dialog.querySelector("[data-bd-image-inline-alignment]");
+    const inlineAlignmentHint = dialog.querySelector("[data-bd-image-inline-alignment-hint]");
+    const dimensionsSummary = dialog.querySelector("[data-bd-image-dimensions-summary]");
+    const altField = dialog.querySelector("[data-bd-image-alt]");
+    const altWarning = dialog.querySelector("[data-bd-image-alt-warning]");
+    const titleField = dialog.querySelector("[data-bd-image-title-value]");
+    const dimensions = fitImageDimensionsForLayout(width, height, layout, nodeView);
+    const aspectRatio = dimensions.width && dimensions.height
+      ? dimensions.width / dimensions.height
+      : null;
+
+    widthField.min = "1";
+    widthField.max = String(getImageWidthLimit(layout, nodeView));
+    heightField.min = "1";
+    heightField.max = String(imageConfig.max_height);
+    widthField.disabled = !imageConfig.allow_resize;
+    heightField.disabled = !imageConfig.allow_resize;
+    widthField.value = dimensions.width ? String(dimensions.width) : "";
+    heightField.value = dimensions.height ? String(dimensions.height) : "";
+    ratioCheckbox.checked = preserveAspectRatio ?? imageConfig.preserve_aspect_ratio;
+    ratioCheckbox.disabled = !imageConfig.allow_resize;
+
+    layoutSelect.replaceChildren();
+    for (const imageLayout of imageConfig.allowed_layouts) {
+      const option = document.createElement("option");
+      option.value = imageLayout;
+      option.textContent = messages[IMAGE_LAYOUT_MESSAGES[imageLayout]];
+      layoutSelect.append(option);
+    }
+    layoutSelect.value = imageConfig.allowed_layouts.includes(layout)
+      ? layout
+      : imageConfig.default_layout;
+    layoutSelect.disabled = imageConfig.allowed_layouts.length === 1;
+    inlineAlignmentLabel.textContent = messages.imageInlineAlignment;
+    inlineAlignmentHint.textContent = messages.imageInlineAlignmentHint;
+    inlineAlignmentSelect.replaceChildren();
+    for (const alignment of imageConfig.inline_vertical_alignments) {
+      const option = document.createElement("option");
+      option.value = alignment;
+      option.textContent = messages[INLINE_VERTICAL_ALIGNMENT_MESSAGES[alignment]];
+      inlineAlignmentSelect.append(option);
+    }
+    inlineAlignmentSelect.value = imageConfig.inline_vertical_alignments.includes(
+      inlineVerticalAlignment,
+    )
+      ? inlineVerticalAlignment
+      : imageConfig.default_inline_vertical_alignment;
+    inlineAlignmentSelect.disabled = imageConfig.inline_vertical_alignments.length === 1;
+    altField.value = alt || "";
+    titleField.value = title || "";
+    altWarning.textContent = messages.missingAltWarning;
+    altWarning.hidden = !qualityConfig.warn_missing_alt || Boolean(altField.value.trim());
+    altField.oninput = () => {
+      altWarning.hidden =
+        !qualityConfig.warn_missing_alt || Boolean(altField.value.trim());
+    };
+
+    function updateDimensionsSummary() {
+      dimensionsSummary.textContent = imageDimensionsSummary(
+        Number(widthField.value),
+        Number(heightField.value),
+        messages,
+      );
+    }
+
+    function updateInlineAlignmentVisibility() {
+      const isInlineLayout = layoutSelect.value === "inline";
+      inlineAlignmentField.hidden = !isInlineLayout;
+      inlineAlignmentHint.hidden = !isInlineLayout;
+    }
+
+    function updateImageWidthLimit() {
+      const maxWidth = getImageWidthLimit(layoutSelect.value, nodeView);
+      widthField.max = String(maxWidth);
+      const currentWidth = Number(widthField.value);
+      const currentHeight = Number(heightField.value);
+      if (currentWidth > maxWidth && currentHeight >= 1) {
+        const scale = Math.min(
+          maxWidth / currentWidth,
+          imageConfig.max_height / currentHeight,
+        );
+        widthField.value = String(Math.max(1, Math.floor(currentWidth * scale)));
+        heightField.value = String(Math.max(1, Math.round(currentHeight * scale)));
+      }
+      updateDimensionsSummary();
+    }
+
+    function updateDimensions(changedField) {
+      if (!imageConfig.allow_resize) return;
+      let nextWidth = Number(widthField.value);
+      let nextHeight = Number(heightField.value);
+      if (!Number.isInteger(nextWidth) || nextWidth < 1) return;
+      if (!Number.isInteger(nextHeight) || nextHeight < 1) return;
+      const maxWidth = getImageWidthLimit(layoutSelect.value, nodeView);
+      if (ratioCheckbox.checked && aspectRatio) {
+        if (changedField === "height") nextWidth = Math.round(nextHeight * aspectRatio);
+        else nextHeight = Math.round(nextWidth / aspectRatio);
+      }
+      if (ratioCheckbox.checked && aspectRatio) {
+        const scale = Math.min(
+          1,
+          maxWidth / nextWidth,
+          imageConfig.max_height / nextHeight,
+        );
+        if (scale < 1) {
+          nextWidth = Math.max(1, Math.floor(nextWidth * scale));
+          nextHeight = Math.max(1, Math.round(nextWidth / aspectRatio));
+        }
+      } else {
+        nextWidth = Math.min(nextWidth, maxWidth);
+        nextHeight = Math.min(nextHeight, imageConfig.max_height);
+      }
+      nextWidth = Math.min(nextWidth, maxWidth);
+      nextHeight = Math.min(nextHeight, imageConfig.max_height);
+      widthField.value = String(nextWidth);
+      heightField.value = String(nextHeight);
+      updateDimensionsSummary();
+    }
+
+    layoutSelect.onchange = () => {
+      updateInlineAlignmentVisibility();
+      updateImageWidthLimit();
+    };
+    widthField.oninput = () => updateDimensions("width");
+    heightField.oninput = () => updateDimensions("height");
+    ratioCheckbox.onchange = () => updateDimensions("width");
+    updateInlineAlignmentVisibility();
+    updateImageWidthLimit();
+    updateDimensionsSummary();
+  }
+
   function openImageDialog(file, dimensions) {
     const dialog = root.querySelector('[data-bd-dialog="image"]');
     const formatSelect = dialog.querySelector("[data-bd-image-format]");
@@ -694,6 +1345,9 @@ function initializeEditor(source) {
     const qualityRange = dialog.querySelector("[data-bd-image-quality]");
     const qualityOutput = dialog.querySelector("[data-bd-image-quality-output]");
     const qualityHint = dialog.querySelector("[data-bd-image-quality-hint]");
+    const uploadOptions = dialog.querySelector("[data-bd-image-upload-options]");
+    const sizeEstimates = dialog.querySelector("[data-bd-image-estimates]");
+    const altField = dialog.querySelector("[data-bd-image-alt]");
     const error = dialog.querySelector("[data-bd-image-error]");
     const qualityConfig = config.uploads;
     const outputFormat = qualityConfig.output_format;
@@ -709,9 +1363,9 @@ function initializeEditor(source) {
         ? sourceFormat
         : allowedFormats[0];
     const qualityValues = {
-      high: Math.min(100, Math.max(qualityConfig.quality, 92)),
+      high: Math.min(qualityConfig.max_quality, Math.max(qualityConfig.quality, 92)),
       balanced: qualityConfig.quality,
-      compact: Math.min(qualityConfig.quality, 68),
+      compact: Math.max(qualityConfig.min_quality, Math.min(qualityConfig.quality, 68)),
     };
     const dimensionText = dimensions
       ? messages.imageDetails
@@ -720,12 +1374,21 @@ function initializeEditor(source) {
           .replace("{size}", formatFileSize(file.size))
       : messages.unknownImageSize;
 
+    dialog.dataset.bdMode = "upload";
+    uploadOptions.hidden = false;
     dialog.querySelector("[data-bd-image-title]").textContent = messages.insertImage;
     dialog.querySelector("[data-bd-image-details]").textContent = dimensionText;
     dialog.querySelector("[data-bd-image-format-text]").textContent = messages.imageFormat;
     dialog.querySelector("[data-bd-image-quality-label]").textContent = messages.qualityPreset;
     dialog.querySelector("[data-bd-image-alt-text]").textContent = messages.altText;
     dialog.querySelector("[data-bd-image-alt-hint]").textContent = messages.altTextHint;
+    dialog.querySelector("[data-bd-image-width-label]").textContent = messages.imageWidth;
+    dialog.querySelector("[data-bd-image-height-label]").textContent = messages.imageHeight;
+    dialog.querySelector("[data-bd-image-ratio-label]").textContent = messages.imageKeepRatio;
+    dialog.querySelector("[data-bd-image-layout-label]").textContent = messages.imageLayout;
+    dialog.querySelector("[data-bd-image-layout-hint]").textContent = messages.imageLayoutHint;
+    dialog.querySelector("[data-bd-image-title-label]").textContent = messages.imageTitle;
+    sizeEstimates.hidden = !qualityConfig.show_size_estimates;
     dialog.querySelector("[data-bd-image-insert]").textContent = messages.insertImage;
     dialog.querySelector("[data-bd-image-cancel]").textContent = messages.cancel;
     dialog.querySelector("[data-bd-image-close]").title = messages.close;
@@ -735,6 +1398,11 @@ function initializeEditor(source) {
     qualityRange.id = `bd-editor-quality-${source.id || "field"}`;
     dialog.querySelector("[data-bd-image-quality-label]").setAttribute("for", qualityRange.id);
     error.textContent = "";
+    setupImagePropertyFields(dialog, {
+      width: dimensions?.width,
+      height: dimensions?.height,
+      layout: config.images.default_layout,
+    });
 
     formatSelect.replaceChildren();
     for (const format of allowedFormats) {
@@ -767,15 +1435,69 @@ function initializeEditor(source) {
         : "high";
     qualitySelect.value = preset;
     qualityRange.value = String(qualityValues[preset]);
+    qualityRange.min = String(qualityConfig.min_quality);
+    qualityRange.max = String(qualityConfig.max_quality);
     qualityRange.setAttribute("aria-label", messages.qualityPreset);
+    let estimateRevision = 0;
+    let estimateTimer = null;
 
     function updateQualityControls() {
       const isPng = formatSelect.value === "PNG";
-      const canChooseQuality = qualityConfig.allow_quality_selection && !isPng;
+      const canChooseQuality =
+        qualityConfig.allow_quality_selection &&
+        !isPng &&
+        qualityConfig.min_quality < qualityConfig.max_quality;
       qualitySelect.disabled = !canChooseQuality;
       qualityRange.disabled = !canChooseQuality;
       qualityHint.textContent = isPng ? messages.pngLossless : "";
       qualityOutput.textContent = messages.qualityValue.replace("{value}", qualityRange.value);
+    }
+
+    function scheduleSizeEstimates() {
+      window.clearTimeout(estimateTimer);
+      estimateTimer = window.setTimeout(updateSizeEstimates, 300);
+    }
+
+    async function updateSizeEstimates() {
+      if (!qualityConfig.show_size_estimates) return;
+      const revision = ++estimateRevision;
+      sizeEstimates.textContent = messages.estimatingSizes;
+      const format = formatSelect.value;
+      const estimates = format === "PNG"
+        ? [{ label: messages.pngLosslessEstimate, quality: qualityConfig.quality }]
+        : qualitySelect.value === "custom"
+          ? [
+              {
+                label: messages.qualityEstimateCurrent.replace("{value}", qualityRange.value),
+                quality: Number(qualityRange.value),
+              },
+            ]
+          : [
+              { label: messages.qualityHigh, quality: qualityValues.high },
+              { label: messages.qualityBalanced, quality: qualityValues.balanced },
+              { label: messages.qualityCompact, quality: qualityValues.compact },
+            ];
+      try {
+        const sizes = await estimateImageSizes(
+          file,
+          format,
+          estimates.map(({ quality }) => quality),
+        );
+        if (revision !== estimateRevision) return;
+        sizeEstimates.textContent = [
+          messages.estimatedSizes,
+          ...estimates.map(({ label }, index) =>
+            messages.qualityEstimate
+              .replace("{label}", label)
+              .replace("{size}", formatFileSize(sizes[index])),
+          ),
+        ].join(" ");
+      } catch (estimateError) {
+        console.warn("BD-Editor could not estimate image output sizes.", estimateError);
+        if (revision === estimateRevision) {
+          sizeEstimates.textContent = messages.sizeEstimatesUnavailable;
+        }
+      }
     }
 
     qualitySelect.onchange = () => {
@@ -783,17 +1505,100 @@ function initializeEditor(source) {
         qualityRange.value = String(qualityValues[qualitySelect.value]);
       }
       updateQualityControls();
+      scheduleSizeEstimates();
     };
     qualityRange.oninput = () => {
       qualitySelect.value = "custom";
       updateQualityControls();
+      scheduleSizeEstimates();
     };
-    formatSelect.onchange = updateQualityControls;
+    formatSelect.onchange = () => {
+      updateQualityControls();
+      updateSizeEstimates();
+    };
     updateQualityControls();
+    updateSizeEstimates();
 
     dialog.__bdUpload = { file, dimensions, qualityValues };
+    dialog.__bdTarget = null;
     openDialog(dialog);
-    dialog.querySelector("[data-bd-image-alt]").focus();
+    altField.focus();
+  }
+
+  function getSelectedImageContext() {
+    const selection = editor.state.selection;
+    if (selection.node?.type.name !== "image") return null;
+    const nodeDOM = editor.view.nodeDOM(selection.from);
+    const imageDOM =
+      nodeDOM instanceof HTMLImageElement ? nodeDOM : nodeDOM?.querySelector?.("img");
+    const renderedSize = imageDOM?.getBoundingClientRect();
+    const width =
+      Math.round(renderedSize?.width || 0) ||
+      Number(selection.node.attrs.width) ||
+      imageDOM?.naturalWidth ||
+      null;
+    const height =
+      Math.round(renderedSize?.height || 0) ||
+      Number(selection.node.attrs.height) ||
+      imageDOM?.naturalHeight ||
+      null;
+    return {
+      position: selection.from,
+      attrs: selection.node.attrs,
+      width,
+      height,
+      nodeView: nodeDOM instanceof HTMLElement ? nodeDOM : null,
+    };
+  }
+
+  function openSelectedImageDialog() {
+    const image = getSelectedImageContext();
+    if (!image) return;
+    const dialog = root.querySelector('[data-bd-dialog="image"]');
+    const widthField = dialog.querySelector("[data-bd-image-width]");
+    const imageConfig = config.images;
+    const uploadOptions = dialog.querySelector("[data-bd-image-upload-options]");
+    const sizeEstimates = dialog.querySelector("[data-bd-image-estimates]");
+
+    dialog.dataset.bdMode = "edit";
+    uploadOptions.hidden = true;
+    sizeEstimates.hidden = true;
+    sizeEstimates.textContent = "";
+    dialog.querySelector("[data-bd-image-title]").textContent = messages.editImage;
+    dialog.querySelector("[data-bd-image-alt-text]").textContent = messages.altText;
+    dialog.querySelector("[data-bd-image-alt-hint]").textContent = messages.altTextHint;
+    dialog.querySelector("[data-bd-image-width-label]").textContent = messages.imageWidth;
+    dialog.querySelector("[data-bd-image-height-label]").textContent = messages.imageHeight;
+    dialog.querySelector("[data-bd-image-ratio-label]").textContent = messages.imageKeepRatio;
+    dialog.querySelector("[data-bd-image-layout-label]").textContent = messages.imageLayout;
+    dialog.querySelector("[data-bd-image-layout-hint]").textContent = messages.imageLayoutHint;
+    dialog.querySelector("[data-bd-image-title-label]").textContent = messages.imageTitle;
+    dialog.querySelector("[data-bd-image-insert]").textContent = messages.saveImageChanges;
+    dialog.querySelector("[data-bd-image-cancel]").textContent = messages.cancel;
+    dialog.querySelector("[data-bd-image-close]").title = messages.close;
+    dialog.querySelector("[data-bd-image-close]").setAttribute("aria-label", messages.close);
+    dialog.querySelector("[data-bd-image-close]").replaceChildren(createIcon(CloseIcon));
+    dialog.querySelector("[data-bd-image-error]").textContent = "";
+    setupImagePropertyFields(dialog, {
+      width: image.width,
+      height: image.height,
+      layout: image.attrs.layout || imageConfig.default_layout,
+      inlineVerticalAlignment: image.attrs.inlineVerticalAlignment,
+      preserveAspectRatio: image.attrs.preserveAspectRatio,
+      alt: image.attrs.alt,
+      title: image.attrs.title,
+      nodeView: image.nodeView,
+    });
+    dialog.__bdUpload = null;
+    dialog.__bdTarget = {
+      position: image.position,
+      width: image.width,
+      height: image.height,
+      nodeView: image.nodeView,
+    };
+    openDialog(dialog);
+    if (imageConfig.allow_resize && widthField.value) widthField.focus();
+    else dialog.querySelector("[data-bd-image-layout]").focus();
   }
 
   async function beginImageSelection() {
@@ -835,11 +1640,74 @@ function initializeEditor(source) {
     fileInput.click();
   }
 
+  function getImageProperties(dialog, fallbackDimensions, mode) {
+    const imageConfig = config.images;
+    const widthField = dialog.querySelector("[data-bd-image-width]");
+    const heightField = dialog.querySelector("[data-bd-image-height]");
+    const layout = dialog.querySelector("[data-bd-image-layout]").value;
+    const inlineVerticalAlignment = dialog.querySelector("[data-bd-image-inline-alignment]").value;
+    const properties = {
+      layout,
+      inlineVerticalAlignment,
+      preserveAspectRatio: dialog.querySelector("[data-bd-image-ratio]").checked,
+      alt: dialog.querySelector("[data-bd-image-alt]").value.trim(),
+      title: dialog.querySelector("[data-bd-image-title-value]").value.trim() || null,
+    };
+    if (!imageConfig.allowed_layouts.includes(layout)) {
+      dialog.querySelector("[data-bd-image-error]").textContent = messages.invalidImageLayout;
+      return null;
+    }
+    if (!imageConfig.inline_vertical_alignments.includes(inlineVerticalAlignment)) {
+      dialog.querySelector("[data-bd-image-error]").textContent =
+        messages.invalidImageVerticalAlignment;
+      return null;
+    }
+
+    if (!imageConfig.allow_resize && mode === "edit") return properties;
+    const widthText = widthField.value.trim();
+    const heightText = heightField.value.trim();
+    const nodeView = dialog.__bdTarget?.nodeView || null;
+    const maxWidth = getImageWidthLimit(layout, nodeView);
+    if (!widthText && !heightText) {
+      const dimensions = fitImageDimensionsForLayout(
+        fallbackDimensions?.width,
+        fallbackDimensions?.height,
+        layout,
+        nodeView,
+      );
+      if (dimensions.width && dimensions.height) Object.assign(properties, dimensions);
+      return properties;
+    }
+    if (!widthText || !heightText) {
+      dialog.querySelector("[data-bd-image-error]").textContent =
+        messages.invalidImageDimensions;
+      return null;
+    }
+
+    const width = Number(widthText);
+    const height = Number(heightText);
+    if (
+      !Number.isInteger(width) ||
+      !Number.isInteger(height) ||
+      width < 1 ||
+      width > maxWidth ||
+      height < 1 ||
+      height > imageConfig.max_height
+    ) {
+      dialog.querySelector("[data-bd-image-error]").textContent =
+        messages.invalidImageDimensions;
+      return null;
+    }
+    return { ...properties, width, height };
+  }
+
   async function uploadSelectedImage() {
     const dialog = root.querySelector('[data-bd-dialog="image"]');
     const error = dialog.querySelector("[data-bd-image-error]");
     const upload = dialog.__bdUpload;
     if (!upload) return;
+    const selectedProperties = getImageProperties(dialog, upload.dimensions, "upload");
+    if (!selectedProperties) return;
 
     const formData = new FormData();
     formData.append("image", upload.file);
@@ -871,6 +1739,13 @@ function initializeEditor(source) {
       const result = await response.json();
       if (!response.ok) throw new Error(result.error || messages.uploadFailure);
       if (!isSafeImageUrl(result.url)) throw new Error(messages.uploadFailure);
+      const imageProperties = { ...selectedProperties };
+      if (!imageProperties.width || !imageProperties.height) {
+        Object.assign(
+          imageProperties,
+          fitImageDimensions(result.width, result.height),
+        );
+      }
 
       const imageSelection = source.__bdImageSelection;
       const inserted = editor
@@ -881,9 +1756,7 @@ function initializeEditor(source) {
           type: "image",
           attrs: {
             src: result.url,
-            alt: dialog.querySelector("[data-bd-image-alt]").value.trim(),
-            width: result.width,
-            height: result.height,
+            ...imageProperties,
           },
         })
         .run();
@@ -899,8 +1772,47 @@ function initializeEditor(source) {
     }
   }
 
+  function updateSelectedImage() {
+    const dialog = root.querySelector('[data-bd-dialog="image"]');
+    const error = dialog.querySelector("[data-bd-image-error]");
+    const target = dialog.__bdTarget;
+    if (!target) return;
+    const properties = getImageProperties(
+      dialog,
+      { width: target.width, height: target.height },
+      "edit",
+    );
+    if (!properties) return;
+    const saveButton = dialog.querySelector("[data-bd-image-insert]");
+    saveButton.disabled = true;
+    error.textContent = "";
+    try {
+      const updated = editor
+        .chain()
+        .focus()
+        .setNodeSelection(target.position)
+        .updateAttributes("image", properties)
+        .run();
+      if (!updated) throw new Error(messages.imageEditFailure);
+      closeDialog(dialog);
+    } catch (editError) {
+      error.textContent =
+        editError instanceof Error ? editError.message : messages.imageEditFailure;
+    } finally {
+      saveButton.disabled = false;
+    }
+  }
+
+  function submitImageDialog() {
+    if (root.querySelector('[data-bd-dialog="image"]').dataset.bdMode === "edit") {
+      updateSelectedImage();
+      return;
+    }
+    void uploadSelectedImage();
+  }
+
   const imageDialog = root.querySelector('[data-bd-dialog="image"]');
-  imageDialog.querySelector("[data-bd-image-insert]").addEventListener("click", uploadSelectedImage);
+  imageDialog.querySelector("[data-bd-image-insert]").addEventListener("click", submitImageDialog);
   imageDialog
     .querySelector("[data-bd-image-cancel]")
     .addEventListener("click", () => closeDialog(imageDialog));
@@ -1022,6 +1934,111 @@ function initializeEditor(source) {
     .querySelector("[data-bd-table-close]")
     .addEventListener("click", () => closeDialog(tableDialog));
 
+  const tableStyleScope = root.querySelector("[data-bd-table-style-scope]");
+  const tableStylePrimary = root.querySelector("[data-bd-table-style-primary]");
+  const tableStyleSecondary = root.querySelector("[data-bd-table-style-secondary]");
+  const tableStyleSecondaryField = root.querySelector("[data-bd-table-style-secondary-field]");
+  const tableStyleApply = root.querySelector("[data-bd-table-style-apply]");
+  const tableStyleClear = root.querySelector("[data-bd-table-style-clear]");
+  root.querySelector("[data-bd-table-style-scope-label]").textContent = messages.tableStyleScope;
+  root.querySelector("[data-bd-table-style-primary-label]").textContent = messages.tableStyleCell;
+  root.querySelector("[data-bd-table-style-secondary-label]").textContent =
+    messages.tableStyleEvenRows;
+  tableStyleScope.querySelector('[value="cell"]').textContent = messages.tableStyleCell;
+  tableStyleScope.querySelector('[value="row"]').textContent = messages.tableStyleRow;
+  tableStyleScope.querySelector('[value="zebra"]').textContent = messages.tableStyleZebra;
+  tableStylePrimary.setAttribute("aria-label", messages.tableStyleCell);
+  tableStyleSecondary.setAttribute("aria-label", messages.tableStyleEvenRows);
+  tableStyleApply.textContent = messages.tableStyleApply;
+  tableStyleClear.textContent = messages.tableStyleClear;
+
+  function getCurrentTableContext() {
+    const { $from } = editor.state.selection;
+    let tableDepth = null;
+    let rowDepth = null;
+    for (let depth = $from.depth; depth > 0; depth -= 1) {
+      const nodeName = $from.node(depth).type.name;
+      if (nodeName === "tableRow" && rowDepth === null) rowDepth = depth;
+      if (nodeName === "table") {
+        tableDepth = depth;
+        break;
+      }
+    }
+    if (tableDepth === null || rowDepth === null) return null;
+    return {
+      table: $from.node(tableDepth),
+      tablePos: $from.before(tableDepth),
+      row: $from.node(rowDepth),
+      rowPos: $from.before(rowDepth),
+    };
+  }
+
+  function updateRowCells(transaction, row, rowPosition, color) {
+    row.forEach((cell, offset) => {
+      if (!["tableCell", "tableHeader"].includes(cell.type.name)) return;
+      transaction.setNodeMarkup(rowPosition + 1 + offset, null, {
+        ...cell.attrs,
+        backgroundColor: color,
+      });
+    });
+  }
+
+  function updateTableRows(tableContext, colorForRow) {
+    const transaction = editor.state.tr;
+    tableContext.table.forEach((row, offset, index) => {
+      updateRowCells(
+        transaction,
+        row,
+        tableContext.tablePos + 1 + offset,
+        colorForRow(index),
+      );
+    });
+    if (transaction.docChanged) editor.view.dispatch(transaction);
+  }
+
+  function applyTableStyle(clear = false) {
+    const tableContext = getCurrentTableContext();
+    if (!tableContext) return;
+    const scope = tableStyleScope.value;
+    const primaryColor = clear ? null : tableStylePrimary.value;
+    const secondaryColor = clear ? null : tableStyleSecondary.value;
+    if (scope === "cell") {
+      editor.chain().focus().setCellAttribute("backgroundColor", primaryColor).run();
+    } else if (scope === "row") {
+      const transaction = editor.state.tr;
+      updateRowCells(transaction, tableContext.row, tableContext.rowPos, primaryColor);
+      if (transaction.docChanged) editor.view.dispatch(transaction);
+    } else {
+      updateTableRows(tableContext, (index) =>
+        clear ? null : index % 2 === 0 ? primaryColor : secondaryColor,
+      );
+    }
+  }
+
+  function updateTableStyleControls() {
+    const zebra = tableStyleScope.value === "zebra";
+    tableStyleSecondaryField.hidden = !zebra;
+    tableStylePrimary.setAttribute(
+      "aria-label",
+      zebra
+        ? messages.tableStyleOddRows
+        : tableStyleScope.value === "row"
+          ? messages.tableStyleRow
+          : messages.tableStyleCell,
+    );
+    root.querySelector("[data-bd-table-style-primary-label]").textContent =
+      zebra
+        ? messages.tableStyleOddRows
+        : tableStyleScope.value === "row"
+          ? messages.tableStyleRow
+          : messages.tableStyleCell;
+  }
+
+  tableStyleScope.addEventListener("change", updateTableStyleControls);
+  tableStyleApply.addEventListener("click", () => applyTableStyle());
+  tableStyleClear.addEventListener("click", () => applyTableStyle(true));
+  updateTableStyleControls();
+
   function closeColorMenus({ returnFocus = false } = {}) {
     for (const { button, menu } of colorMenus.values()) {
       if (menu.hidden) continue;
@@ -1125,10 +2142,17 @@ function initializeEditor(source) {
       if (!(target instanceof HTMLElement)) return;
 
       const enterActions = [
-        ["[data-bd-image-alt]", uploadSelectedImage],
+        [
+          "[data-bd-image-alt], [data-bd-image-width], [data-bd-image-height], [data-bd-image-layout], [data-bd-image-inline-alignment], [data-bd-image-title-value]",
+          submitImageDialog,
+        ],
         ["[data-bd-link-text], [data-bd-link-url]", applyLink],
         ["[data-bd-embed-url]", applyEmbed],
         ["[data-bd-table-rows], [data-bd-table-columns]", insertTable],
+        [
+          "[data-bd-table-style-scope], [data-bd-table-style-primary], [data-bd-table-style-secondary]",
+          () => applyTableStyle(),
+        ],
       ];
       const matchingAction = enterActions.find(([selector]) => target.matches(selector));
       if (!matchingAction) return;
@@ -1160,6 +2184,53 @@ function initializeEditor(source) {
     };
     void beginImageSelection();
   }, "primary");
+  addButton("image_editing", ImageEditIcon, openSelectedImageDialog, "primary");
+  function updateImageContextAttribute(attribute, value) {
+    const selection = editor.state.selection;
+    const position =
+      selection.node?.type.name === "image" ? selection.from : selectedImagePosition;
+    const node = position === null ? null : editor.state.doc.nodeAt(position);
+    if (node?.type.name !== "image") return;
+    if (
+      attribute === "layout" &&
+      !config.images.allowed_layouts.includes(value)
+    ) {
+      return;
+    }
+    if (
+      attribute === "inlineVerticalAlignment" &&
+      !config.images.inline_vertical_alignments.includes(value)
+    ) {
+      return;
+    }
+
+    const attributes = { [attribute]: value };
+    if (attribute === "layout") {
+      const nodeView = editor.view.nodeDOM(position);
+      const image = nodeView instanceof HTMLElement ? nodeView.querySelector("img") : null;
+      const dimensions = fitImageDimensionsForLayout(
+        Number(node.attrs.width) || image?.naturalWidth,
+        Number(node.attrs.height) || image?.naturalHeight,
+        value,
+        nodeView,
+      );
+      if (dimensions.width && dimensions.height) Object.assign(attributes, dimensions);
+    }
+
+    editor
+      .chain()
+      .setNodeSelection(position)
+      .updateAttributes("image", attributes)
+      .run();
+    selectedImagePosition = position;
+    editor.commands.setNodeSelection(position);
+  }
+  imageLayoutToolbar.addEventListener("change", () => {
+    updateImageContextAttribute("layout", imageLayoutToolbar.value);
+  });
+  inlineAlignmentToolbar.addEventListener("change", () => {
+    updateImageContextAttribute("inlineVerticalAlignment", inlineAlignmentToolbar.value);
+  });
   addButton("table", TableIcon, showTableDialog, "primary");
   addButton("embed", EmbedIcon, showEmbedDialog, "primary");
 
@@ -1184,6 +2255,34 @@ function initializeEditor(source) {
     });
     rows.format.append(headingSelect);
     buttonRefs.set("heading", headingSelect);
+    addSeparator("format");
+  }
+
+  const textAlignSelect = toolbarConfig.text_align ? document.createElement("select") : null;
+  if (textAlignSelect) {
+    textAlignSelect.className = "bd-editor-format-select";
+    textAlignSelect.setAttribute("aria-label", messages.text_align);
+    for (const [value, label] of [
+      ["", messages.alignDefault],
+      ["left", messages.alignLeft],
+      ["center", messages.alignCenter],
+      ["right", messages.alignRight],
+    ]) {
+      const option = document.createElement("option");
+      option.value = value;
+      option.textContent = label;
+      textAlignSelect.append(option);
+    }
+    textAlignSelect.addEventListener("change", () => {
+      const nodeType = editor.isActive("heading") ? "heading" : "paragraph";
+      editor
+        .chain()
+        .focus()
+        .updateAttributes(nodeType, { textAlign: textAlignSelect.value || null })
+        .run();
+    });
+    rows.format.append(textAlignSelect);
+    buttonRefs.set("text_align", textAlignSelect);
     addSeparator("format");
   }
 

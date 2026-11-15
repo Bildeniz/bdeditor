@@ -64,7 +64,7 @@ SAFE_ATTRIBUTES = {
     "h5": {"style"},
     "h6": {"style"},
     "iframe": {"src", "title", "width", "height"},
-    "img": {"src", "alt", "title", "width", "height"},
+    "img": {"src", "alt", "title", "width", "height", "style"},
     "li": {"style"},
     "p": {"style"},
     "pre": {"style"},
@@ -95,6 +95,10 @@ SAFE_CSS_PROPERTIES = {
     "border-top-width",
     "border-width",
     "color",
+    "clear",
+    "display",
+    "float",
+    "height",
     "font-family",
     "font-size",
     "font-style",
@@ -106,6 +110,7 @@ SAFE_CSS_PROPERTIES = {
     "margin-right",
     "margin-top",
     "max-width",
+    "max-height",
     "padding",
     "padding-bottom",
     "padding-left",
@@ -133,8 +138,10 @@ _SMALL_TOOLBAR = {
     "code_block": False,
     "link": True,
     "image": False,
+    "image_editing": False,
     "embed": False,
     "table": False,
+    "text_align": False,
     "source": False,
     "undo": True,
     "redo": True,
@@ -149,6 +156,8 @@ _STANDARD_TOOLBAR = {
     "code_block": True,
     "embed": True,
     "table": True,
+    "text_align": True,
+    "image_editing": True,
     "source": True,
 }
 
@@ -183,7 +192,29 @@ _DEFAULTS = {
         "allow_format_selection": True,
         "allow_quality_selection": True,
         "quality": 85,
+        "min_quality": 1,
+        "max_quality": 100,
+        "show_size_estimates": True,
+        "warn_missing_alt": False,
         "storage_alias": "default",
+    },
+    "images": {
+        "allow_resize": True,
+        "max_width": 2048,
+        "max_height": 2048,
+        "float_max_width_percent": 50,
+        "preserve_aspect_ratio": True,
+        "allowed_layouts": [
+            "block-left",
+            "block-center",
+            "block-right",
+            "inline",
+            "float-left",
+            "float-right",
+        ],
+        "default_layout": "block-left",
+        "inline_vertical_alignments": ["top", "middle", "bottom"],
+        "default_inline_vertical_alignment": "top",
     },
     "drafts": {"enabled": False, "ttl_days": 7},
     "embeds": {"providers": ["youtube"]},
@@ -194,11 +225,83 @@ _CONFIG_KEYS = set(_DEFAULTS)
 _TOOLBAR_KEYS = set(_DEFAULTS["toolbar"])
 _SANITIZER_KEYS = set(_DEFAULTS["sanitizer"])
 _UPLOAD_KEYS = set(_DEFAULTS["uploads"])
+_IMAGE_KEYS = set(_DEFAULTS["images"])
 _DRAFT_KEYS = set(_DEFAULTS["drafts"])
 _FORBIDDEN_TAGS = {"audio", "embed", "object", "script", "source", "style", "video"}
 _IMAGE_FORMATS = {"JPEG", "PNG", "WEBP"}
 _MAX_UPLOAD_BYTES = 100 * 1024 * 1024
 _MAX_IMAGE_PIXELS = 50_000_000
+_MAX_IMAGE_DIMENSION = 10_000
+_IMAGE_LAYOUTS = {
+    "block-left",
+    "block-center",
+    "block-right",
+    "inline",
+    "float-left",
+    "float-right",
+}
+_INLINE_VERTICAL_ALIGNMENTS = {"top", "middle", "bottom", "baseline"}
+_TEXT_ALIGNABLE_TAGS = {"p", "h1", "h2", "h3", "h4", "h5", "h6"}
+_IMAGE_LAYOUT_CSS_PROPERTIES = {
+    "block-left": {
+        "clear",
+        "display",
+        "float",
+        "max-height",
+        "max-width",
+        "margin-bottom",
+        "margin-left",
+        "margin-right",
+    },
+    "block-center": {
+        "clear",
+        "display",
+        "float",
+        "max-height",
+        "max-width",
+        "margin-bottom",
+        "margin-left",
+        "margin-right",
+    },
+    "block-right": {
+        "clear",
+        "display",
+        "float",
+        "max-height",
+        "max-width",
+        "margin-bottom",
+        "margin-left",
+        "margin-right",
+    },
+    "inline": {
+        "clear",
+        "display",
+        "float",
+        "margin-left",
+        "margin-right",
+        "max-height",
+        "max-width",
+        "vertical-align",
+    },
+    "float-left": {
+        "clear",
+        "display",
+        "float",
+        "margin-bottom",
+        "margin-right",
+        "max-height",
+        "max-width",
+    },
+    "float-right": {
+        "clear",
+        "display",
+        "float",
+        "margin-bottom",
+        "margin-left",
+        "max-height",
+        "max-width",
+    },
+}
 
 
 def _fail(path, message):
@@ -322,6 +425,18 @@ def _validate_config(config, path):
                 f"requires the span style attribute and sanitizer.css_properties "
                 f"to allow {css_property!r}.",
             )
+    if toolbar["text_align"]:
+        text_align_tags = tags & _TEXT_ALIGNABLE_TAGS
+        if (
+            "text-align" not in allowed_css
+            or not text_align_tags
+            or any("style" not in attributes.get(tag, []) for tag in text_align_tags)
+        ):
+            _fail(
+                f"{path}.toolbar.text_align",
+                "requires style on an allowed paragraph/heading tag and "
+                "sanitizer.css_properties to allow 'text-align'.",
+            )
 
     _require_list(sanitizer["url_schemes"], f"{path}.sanitizer.url_schemes")
     if not set(sanitizer["url_schemes"]).issubset(SAFE_URL_SCHEMES):
@@ -386,9 +501,137 @@ def _validate_config(config, path):
             f"{path}.uploads.enabled",
             "requires Pillow; install the 'bd-editor[images]' extra.",
         )
-    for key in ("allow_format_selection", "allow_quality_selection"):
+    for key in (
+        "allow_format_selection",
+        "allow_quality_selection",
+        "show_size_estimates",
+        "warn_missing_alt",
+    ):
         if type(uploads[key]) is not bool:
             _fail(f"{path}.uploads.{key}", "must be a boolean.")
+    for key in ("min_quality", "max_quality"):
+        if type(uploads[key]) is not int or not 1 <= uploads[key] <= 100:
+            _fail(f"{path}.uploads.{key}", "must be an integer from 1 to 100.")
+    if uploads["min_quality"] > uploads["max_quality"]:
+        _fail(f"{path}.uploads.min_quality", "must not exceed uploads.max_quality.")
+    if not uploads["min_quality"] <= uploads["quality"] <= uploads["max_quality"]:
+        _fail(
+            f"{path}.uploads.quality",
+            "must be within the configured min_quality and max_quality.",
+        )
+
+    images = config["images"]
+    if not isinstance(images, Mapping) or set(images) != _IMAGE_KEYS:
+        _fail(f"{path}.images", "must contain the supported image options.")
+    if type(images["allow_resize"]) is not bool:
+        _fail(f"{path}.images.allow_resize", "must be a boolean.")
+    if type(images["preserve_aspect_ratio"]) is not bool:
+        _fail(f"{path}.images.preserve_aspect_ratio", "must be a boolean.")
+    for key in ("max_width", "max_height"):
+        if type(images[key]) is not int or not 1 <= images[key] <= _MAX_IMAGE_DIMENSION:
+            _fail(
+                f"{path}.images.{key}",
+                f"must be an integer from 1 to {_MAX_IMAGE_DIMENSION}.",
+            )
+    if type(images["float_max_width_percent"]) is not int or not (
+        25 <= images["float_max_width_percent"] <= 75
+    ):
+        _fail(
+            f"{path}.images.float_max_width_percent",
+            "must be an integer from 25 to 75.",
+        )
+    _require_list(images["allowed_layouts"], f"{path}.images.allowed_layouts")
+    image_layouts = set(images["allowed_layouts"])
+    if (
+        not image_layouts
+        or len(image_layouts) != len(images["allowed_layouts"])
+        or not image_layouts.issubset(_IMAGE_LAYOUTS)
+    ):
+        invalid = sorted(image_layouts - _IMAGE_LAYOUTS)
+        message = (
+            f"unsupported layouts: {', '.join(invalid)}."
+            if invalid
+            else "must contain unique supported layouts."
+        )
+        _fail(f"{path}.images.allowed_layouts", message)
+    if not isinstance(images["default_layout"], str) or (
+        images["default_layout"] not in image_layouts
+    ):
+        _fail(
+            f"{path}.images.default_layout",
+            "must be one of images.allowed_layouts.",
+        )
+    _require_list(
+        images["inline_vertical_alignments"],
+        f"{path}.images.inline_vertical_alignments",
+    )
+    inline_vertical_alignments = set(images["inline_vertical_alignments"])
+    if (
+        not inline_vertical_alignments
+        or len(inline_vertical_alignments) != len(images["inline_vertical_alignments"])
+        or not inline_vertical_alignments.issubset(_INLINE_VERTICAL_ALIGNMENTS)
+    ):
+        invalid = sorted(inline_vertical_alignments - _INLINE_VERTICAL_ALIGNMENTS)
+        message = (
+            f"unsupported values: {', '.join(invalid)}."
+            if invalid
+            else "must contain unique supported values."
+        )
+        _fail(f"{path}.images.inline_vertical_alignments", message)
+    if not isinstance(images["default_inline_vertical_alignment"], str) or (
+        images["default_inline_vertical_alignment"] not in inline_vertical_alignments
+    ):
+        _fail(
+            f"{path}.images.default_inline_vertical_alignment",
+            "must be one of images.inline_vertical_alignments.",
+        )
+    _require_list(
+        images["inline_vertical_alignments"],
+        f"{path}.images.inline_vertical_alignments",
+    )
+    inline_vertical_alignments = set(images["inline_vertical_alignments"])
+    if (
+        not inline_vertical_alignments
+        or len(inline_vertical_alignments) != len(images["inline_vertical_alignments"])
+        or not inline_vertical_alignments.issubset(_INLINE_VERTICAL_ALIGNMENTS)
+    ):
+        invalid = sorted(inline_vertical_alignments - _INLINE_VERTICAL_ALIGNMENTS)
+        message = (
+            f"unsupported values: {', '.join(invalid)}."
+            if invalid
+            else "must contain unique supported values."
+        )
+        _fail(
+            f"{path}.images.inline_vertical_alignments",
+            message,
+        )
+    if not isinstance(images["default_inline_vertical_alignment"], str) or (
+        images["default_inline_vertical_alignment"] not in inline_vertical_alignments
+    ):
+        _fail(
+            f"{path}.images.default_inline_vertical_alignment",
+            "must be one of images.inline_vertical_alignments.",
+        )
+    if toolbar["image_editing"]:
+        image_attributes = set(attributes.get("img", []))
+        required_image_attributes = {"src", "alt", "title", "style"}
+        if images["allow_resize"]:
+            required_image_attributes.update({"width", "height"})
+        required_image_css = set().union(
+            *(_IMAGE_LAYOUT_CSS_PROPERTIES[layout] for layout in image_layouts)
+        )
+        if images["preserve_aspect_ratio"]:
+            required_image_css.add("height")
+        if (
+            "img" not in tags
+            or not required_image_attributes.issubset(image_attributes)
+            or not required_image_css.issubset(allowed_css)
+        ):
+            _fail(
+                f"{path}.toolbar.image_editing",
+                "requires src/alt/title/style on img, safe layout CSS properties, "
+                "and width/height when resizing is enabled.",
+            )
 
     drafts = config["drafts"]
     if not isinstance(drafts, Mapping) or set(drafts) != _DRAFT_KEYS:

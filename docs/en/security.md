@@ -55,6 +55,12 @@ production, serve user media from a separate origin where practical, configure
 your reverse proxy's request-body limit, and use a storage backend with
 appropriate access controls.
 
+The editor's resize controls change HTML display dimensions, not stored pixel
+data. The `images.max_width` and `images.max_height` settings bound those
+dimensions on the server. Alignment and text-wrapping modes use only CSS
+properties in the server-side allowlist; the editor toolbar is not a security
+boundary.
+
 ## Browser drafts
 
 Draft persistence is disabled by default. When enabled, draft text (including

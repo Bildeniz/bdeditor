@@ -33,7 +33,24 @@ Set `toolbar_preset` to `small`, `standard`, or `full` globally or per app.
 Then apply individual boolean `toolbar` overrides. The standard and full
 profiles include a table insert action. When the cursor is inside a table, the
 editor exposes contextual commands to insert/delete rows and columns, toggle a
-header row, or delete the table.
+header row, or delete the table. The same toolbar can apply a custom background
+color to the current cell or row, clear it, or stripe alternating rows with
+two chosen colors. These styles are stored as cell-level `background-color`
+styles and remain subject to the resolved sanitizer allowlist.
+
+## Text alignment and image editing
+
+The `text_align` toolbar option adds a left/center/right selector for the
+current paragraph or heading. When `image_editing` is enabled, selecting an
+image exposes a dialog to change its displayed dimensions, alt text, title,
+and placement. Layouts can put the image on its own left/center/right line,
+inline with text, or float it left/right so nearby text wraps around it.
+Selected images also expose draggable resize handles with a live dimensions
+and aspect-ratio readout. Inline images can be aligned to the top, middle, or
+bottom of the text line; float layouts let adjacent text start at the top.
+Image dimensions are display attributes; this does not resize or re-encode the
+stored file. The resolved sanitizer bounds width and height and filters image
+styles through its CSS allowlist.
 
 ## Sanitization helpers
 

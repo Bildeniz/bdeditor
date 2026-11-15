@@ -109,7 +109,12 @@ Geçersiz ya da bilinmeyen güvenlik ayarları uygulama başlatılırken açık 
 ```python
 BD_EDITOR = {
     "defaults": {
-        "toolbar": {"image": True, "embed": True},
+        "toolbar": {
+            "image": True,
+            "image_editing": True,
+            "text_align": True,
+            "embed": True,
+        },
         "uploads": {
             "enabled": True,
             "max_file_size": 5 * 1024 * 1024,
@@ -122,6 +127,22 @@ BD_EDITOR = {
             "storage_alias": "default",
         },
         "embeds": {"providers": ["youtube", "vimeo"]},
+        "images": {
+            "max_width": 1600,
+            "max_height": 1200,
+            "preserve_aspect_ratio": True,
+            "allowed_layouts": [
+                "block-left",
+                "block-center",
+                "block-right",
+                "inline",
+                "float-left",
+                "float-right",
+            ],
+            "default_layout": "block-left",
+            "inline_vertical_alignments": ["top", "middle", "bottom"],
+            "default_inline_vertical_alignment": "top",
+        },
     },
 }
 ```
@@ -134,7 +155,12 @@ olabilir. Video dosyaları reddedilir; yalnızca etkin video sağlayıcılarına
 URL'ler gömülebilir.
 Görsel penceresinde izinli çıktı biçimini, boyut ve piksel ölçülerine göre
 önerilen kalite seçeneğini ve alternatif metni belirleyebilirsiniz. PNG
-kayıpsızdır.
+kayıpsızdır. `standard` araç çubuğu metni hizalar ve seçili bir görselin
+görüntüleme boyutunu, yerleşimini, alternatif metnini ya da başlığını
+değiştirir. Görseller metin içine alınabilir veya sola/sağa kaydırılarak
+yakındaki metnin etraflarında akması sağlanabilir. Seçili görselde mavi
+boyutlandırma tutamakları ve canlı boyut/oran bilgisi görünür; satır içi
+görseller üstten, ortadan veya alttan hizalanabilir.
 
 `standard` profili HTML tabloları da ekler. Tablo içinde satır ve sütun ekleyip
 kaldırmak için bağlamsal tablo araçlarını kullanın.

@@ -18,5 +18,15 @@ def test_admin_add_form_renders_editor_widget_and_local_assets(client):
     assert response.status_code == 200
     assert 'data-bd-editor-root' in page
     assert 'data-bd-model-label="tests.article"' in page
+    assert 'data-bd-image-context-tools' in page
+    assert 'data-bd-image-layout-toolbar' in page
+    assert 'data-bd-image-inline-alignment-toolbar' in page
+    assert 'data-bd-table-style-apply' in page
+    assert 'data-bd-image-estimates' in page
+    assert 'data-bd-image-width' in page
+    assert 'data-bd-image-layout' in page
+    assert 'data-bd-image-inline-alignment' in page
+    assert 'data-bd-image-inline-alignment-hint' in page
+    assert 'data-bd-image-dimensions-summary' in page
     assert "bd_editor/editor.css" in page
     assert "bd_editor/editor.js" in page

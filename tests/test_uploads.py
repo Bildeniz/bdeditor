@@ -145,6 +145,31 @@ def test_upload_rejects_out_of_range_client_quality(settings):
 
 
 @pytest.mark.django_db
+def test_upload_rejects_quality_outside_the_configured_range(settings):
+    _enable_uploads(settings, min_quality=55, max_quality=90, quality=75)
+    user = get_user_model().objects.create_superuser(
+        username="bounded-quality-editor",
+        email="bounded-quality@example.test",
+        password="test-password",
+    )
+    client = Client()
+    client.force_login(user)
+
+    response = client.post(
+        "/bd-editor/upload/",
+        {
+            "image": SimpleUploadedFile("cover.png", _png_bytes(), content_type="image/png"),
+            "app_label": "tests",
+            "model_label": "tests.article",
+            "quality": "54",
+        },
+    )
+
+    assert response.status_code == 400
+    assert "quality" in response.json()["error"].lower()
+
+
+@pytest.mark.django_db
 def test_upload_rejects_quality_when_configuration_locks_it(settings):
     _enable_uploads(settings, allow_quality_selection=False)
     user = get_user_model().objects.create_superuser(

@@ -3,8 +3,12 @@
 BD-Editor is a configurable rich-text editor for Django admin and forms. It
 provides a bundled editor UI, server-side HTML sanitization, per-app toolbar
 settings and toolbar presets, editable HTML tables, optional browser drafts,
-modal link/image editing, text and highlight color palettes, image format and
-quality selection, and allowlisted video embeds.
+modal link/image editing, text and highlight color palettes, table cell/row
+colors with custom zebra striping, configurable image quality limits and
+browser-side output-size estimates, an optional image alt-text reminder, and
+text alignment plus blue-handled image resizing with live ratio feedback,
+top/middle/bottom inline alignment, and text-wrapping layouts, alongside
+allowlisted video embeds.
 
 The PyPI distribution is named `bd-editor`; import it as `bd_editor`.
 
@@ -53,7 +57,7 @@ themselves. See [the security guide](docs/en/security.md).
 
 The project is under active development. See [Progress.md](Progress.md) for
 milestones and [Agents.md](Agents.md) for development and security invariants.
-
+l
 ## License
 
 BD-Editor is released under the MIT license. Bundled third-party components

@@ -32,6 +32,18 @@ def _cleaner(config, allow_styles=True):
     def filter_attribute(tag, attribute, value):
         if tag == "iframe" and attribute == "src":
             return canonicalize_embed_url(value, config["embeds"]["providers"])
+        if tag == "img" and attribute in {"width", "height"}:
+            maximum = config["images"]["max_width" if attribute == "width" else "max_height"]
+            if (
+                not value.isascii()
+                or not value.isdecimal()
+                or len(value) > 64
+            ):
+                return None
+            dimension = int(value)
+            if dimension < 1:
+                return None
+            return str(min(dimension, maximum))
         if tag in {"td", "th"} and attribute == "data-colwidth":
             widths = value.split(",")
             if not widths or len(widths) > 32:
